@@ -14,7 +14,8 @@ part 'app_router.g.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 const _routePermissions = <String, List<String>>{
-  '/form/ipal': ['ipal.logs.create', 'ipal.logs.submit'],
+  '/form/ipal/proses': ['ipal.logs.create', 'ipal.logs.submit'],
+  '/form/ipal/checklist': ['ipal.logs.create'],
   '/form/b3': ['b3storage.logs.create'],
   '/laporan/b3': ['b3storage.monthly-report.view'],
 };
@@ -61,27 +62,35 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
-        path: '/form/ipal',
+        path: '/form/ipal/proses',
         builder: (context, state) => const ProtectedPlaceholderScreen(
-          title: 'Form IPAL',
-          description:
-              'Fondasi form IPAL sudah siap untuk master checklist, catatan proses, dan batch mixing.',
+          title: 'Catatan Proses IPAL',
+          description: 'Proses harian dan batch mixing.',
+          selectedPath: '/form/ipal/proses',
+        ),
+      ),
+      GoRoute(
+        path: '/form/ipal/checklist',
+        builder: (context, state) => const ProtectedPlaceholderScreen(
+          title: 'Checklist Pemeriksaan Harian',
+          description: 'Status unit dan catatan pemeriksaan.',
+          selectedPath: '/form/ipal/checklist',
         ),
       ),
       GoRoute(
         path: '/form/b3',
         builder: (context, state) => const ProtectedPlaceholderScreen(
           title: 'Form Penyimpanan Limbah B3',
-          description:
-              'Fondasi form B3 sudah siap untuk master jenis limbah, departemen, dan upload foto.',
+          description: 'Log masuk atau keluar TPS LB3.',
+          selectedPath: '/form/b3',
         ),
       ),
       GoRoute(
         path: '/laporan/b3',
         builder: (context, state) => const ProtectedPlaceholderScreen(
           title: 'Laporan Bulanan B3',
-          description:
-              'Route laporan bulanan B3 sudah dilindungi permission sesuai kontrak API.',
+          description: 'Rekap dan approval bulanan penyimpanan limbah B3.',
+          selectedPath: '/laporan/b3',
         ),
       ),
       GoRoute(

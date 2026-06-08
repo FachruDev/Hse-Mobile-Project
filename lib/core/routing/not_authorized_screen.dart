@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../shared/layout/hse_app_scaffold.dart';
+
 class NotAuthorizedScreen extends StatelessWidget {
   const NotAuthorizedScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Akses Ditolak')),
-      body: const Center(
+    return const HseAppScaffold(
+      title: 'Akses Ditolak',
+      showBackButton: true,
+      body: Center(
         child: Padding(
           padding: EdgeInsets.all(24),
           child: Text(

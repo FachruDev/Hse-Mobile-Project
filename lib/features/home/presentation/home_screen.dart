@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../color_config.dart';
+import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../auth/application/auth_session_controller.dart';
 import '../../auth/domain/entities/app_user.dart';
 
@@ -13,50 +15,161 @@ class HomeScreen extends ConsumerWidget {
     final session = ref.watch(authSessionControllerProvider).value;
     final user = session?.user;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('HSE Mobile'),
-        actions: [
-          IconButton(
-            tooltip: 'Keluar',
-            onPressed: () =>
-                ref.read(authSessionControllerProvider.notifier).logout(),
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
+    return HseAppScaffold(
+      title: 'Dashboard',
+      selectedPath: '/beranda',
+      showDrawer: true,
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(
-            'Selamat datang, ${user?.name ?? 'Pengguna'}',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 4),
-          Text(user?.department?.name ?? 'Departemen belum tersedia'),
+          _DashboardHeader(user: user),
+          const SizedBox(height: 16),
+          const _QuickStatusGrid(),
           const SizedBox(height: 24),
+          Text('Menu Form', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
           _ModuleTile(
-            title: 'Form IPAL',
-            subtitle: 'Checklist unit, catatan proses, dan batch mixing.',
-            icon: Icons.water_drop_outlined,
+            title: 'Catatan Proses IPAL',
+            subtitle: 'Proses harian dan batch mixing.',
+            icon: Icons.fact_check_outlined,
             enabled: user.hasAny(['ipal.logs.create', 'ipal.logs.submit']),
-            onTap: () => context.go('/form/ipal'),
+            onTap: () => context.push('/form/ipal/proses'),
+          ),
+          _ModuleTile(
+            title: 'Checklist Pemeriksaan Harian',
+            subtitle: 'Status unit dan catatan pemeriksaan.',
+            icon: Icons.checklist_outlined,
+            enabled: user.hasAny(['ipal.logs.create']),
+            onTap: () => context.push('/form/ipal/checklist'),
           ),
           _ModuleTile(
             title: 'Penyimpanan Limbah B3',
             subtitle: 'Input log masuk atau keluar TPS LB3.',
             icon: Icons.inventory_2_outlined,
             enabled: user.hasAny(['b3storage.logs.create']),
-            onTap: () => context.go('/form/b3'),
+            onTap: () => context.push('/form/b3'),
           ),
+          const SizedBox(height: 12),
+          Text('Laporan', style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
           _ModuleTile(
             title: 'Laporan Bulanan B3',
             subtitle: 'Rekap dan approval bulanan penyimpanan limbah B3.',
             icon: Icons.assignment_outlined,
             enabled: user.hasAny(['b3storage.monthly-report.view']),
-            onTap: () => context.go('/laporan/b3'),
+            onTap: () => context.push('/laporan/b3'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({required this.user});
+
+  final AppUser? user;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    user?.name ?? 'Pengguna',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(color: AppColors.white),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    user?.department?.name ?? 'Departemen belum tersedia',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.white.withValues(alpha: 0.84),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.verified_user_outlined,
+              color: AppColors.white,
+              size: 34,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickStatusGrid extends StatelessWidget {
+  const _QuickStatusGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Expanded(
+          child: _StatusTile(
+            label: 'Draft Lokal',
+            value: '0',
+            icon: Icons.edit_document,
+            color: AppColors.warning,
+          ),
+        ),
+        SizedBox(width: 12),
+        Expanded(
+          child: _StatusTile(
+            label: 'Antrean Submit',
+            value: '0',
+            icon: Icons.cloud_upload_outlined,
+            color: AppColors.primary,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusTile extends StatelessWidget {
+  const _StatusTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: color),
+            const SizedBox(height: 10),
+            Text(value, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 2),
+            Text(label, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
       ),
     );
   }
@@ -83,10 +196,20 @@ class _ModuleTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: ListTile(
+        minVerticalPadding: 16,
         enabled: enabled,
-        leading: Icon(icon, color: enabled ? theme.colorScheme.primary : null),
+        leading: Container(
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: enabled
+                ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                : AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, color: enabled ? theme.colorScheme.primary : null),
+        ),
         title: Text(title),
         subtitle: Text(
           enabled ? subtitle : 'Akses belum tersedia untuk akun ini.',

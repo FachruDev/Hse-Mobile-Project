@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 
+import '../../../shared/layout/hse_app_scaffold.dart';
+
 class ProtectedPlaceholderScreen extends StatelessWidget {
   const ProtectedPlaceholderScreen({
     required this.title,
     required this.description,
+    required this.selectedPath,
     super.key,
   });
 
   final String title;
   final String description;
+  final String selectedPath;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
+    return HseAppScaffold(
+      title: title,
+      selectedPath: selectedPath,
+      showBackButton: true,
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -23,9 +29,7 @@ class ProtectedPlaceholderScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Text(description),
             const SizedBox(height: 24),
-            const Text(
-              'Implementasi detail akan memakai master data API, cache lokal, draft form, dan submit queue yang sudah disiapkan di fondasi aplikasi.',
-            ),
+            const LinearProgressIndicator(),
           ],
         ),
       ),
