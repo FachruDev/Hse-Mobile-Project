@@ -70,7 +70,7 @@ Validation error:
 
 ## File Docs
 
-- `auth.md`: login, profile, logout.
+- `../auth/auth.md`: login, profile, logout.
 - `master-data.md`: master checklist, proses, batch, B3 waste type, department.
 - `ipal.md`: endpoint form 1-3 IPAL.
 - `b3-storage.md`: endpoint form 4 B3 dan report bulanan.
