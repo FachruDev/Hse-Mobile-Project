@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -11,7 +13,7 @@ class LocalCacheService {
   final Box<dynamic> _box;
 
   Future<void> writeJson(String key, Object? value) async {
-    await _box.put(key, value);
+    await _box.put(key, _jsonSafeValue(value));
   }
 
   Map<String, dynamic>? readJsonMap(String key) {
@@ -31,6 +33,11 @@ class LocalCacheService {
   }
 
   Future<void> remove(String key) => _box.delete(key);
+
+  Object? _jsonSafeValue(Object? value) {
+    if (value == null) return null;
+    return jsonDecode(jsonEncode(value)) as Object?;
+  }
 }
 
 @Riverpod(keepAlive: true)

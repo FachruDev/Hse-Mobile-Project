@@ -6,6 +6,7 @@ import '../../features/auth/application/auth_session_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/forms/presentation/protected_placeholder_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/ipal/presentation/ipal_process_form_screen.dart';
 import 'not_authorized_screen.dart';
 import 'splash_screen.dart';
 
@@ -63,11 +64,7 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: '/form/ipal/proses',
-        builder: (context, state) => const ProtectedPlaceholderScreen(
-          title: 'Catatan Proses IPAL',
-          description: 'Proses harian dan batch mixing.',
-          selectedPath: '/form/ipal/proses',
-        ),
+        builder: (context, state) => const IpalProcessFormScreen(),
       ),
       GoRoute(
         path: '/form/ipal/checklist',
