@@ -39,10 +39,39 @@ void main() {
       expect(templates.single, isA<Map<String, dynamic>>());
     },
   );
+
+  test('readJsonMap menormalisasi nested Hive map dynamic', () {
+    final box = _MemoryBox();
+    final cache = LocalCacheService(box);
+    box.seed('draft', {
+      'tanggal': '2026-07-07',
+      'templateId': 1,
+      'processValues': {1: '7.1'},
+      'batches': [
+        {
+          'batchNo': 1,
+          'values': {2: 'Normal'},
+        },
+      ],
+    });
+
+    final draft = cache.readJsonMap('draft')!;
+    final processValues = draft['processValues'] as Map<String, dynamic>;
+    final batches = draft['batches'] as List<dynamic>;
+    final batch = batches.single as Map<String, dynamic>;
+    final values = batch['values'] as Map<String, dynamic>;
+
+    expect(processValues['1'], '7.1');
+    expect(values['2'], 'Normal');
+  });
 }
 
 class _MemoryBox extends Fake implements Box<dynamic> {
   final _values = <dynamic, dynamic>{};
+
+  void seed(dynamic key, dynamic value) {
+    _values[key] = value;
+  }
 
   @override
   Future<void> put(dynamic key, dynamic value) async {

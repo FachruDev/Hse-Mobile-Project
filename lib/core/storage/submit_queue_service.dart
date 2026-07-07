@@ -3,6 +3,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'hive_box_names.dart';
+import 'json_storage_codec.dart';
 
 part 'submit_queue_service.freezed.dart';
 part 'submit_queue_service.g.dart';
@@ -13,14 +14,16 @@ class SubmitQueueService {
   final Box<dynamic> _box;
 
   Future<void> enqueue(SubmitQueueItem item) async {
-    await _box.put(item.id, item.toJson());
+    await _box.put(item.id, JsonStorageCodec.normalize(item.toJson()));
   }
 
   List<SubmitQueueItem> pendingItems() {
     return _box.values
         .whereType<Map>()
         .map(
-          (item) => SubmitQueueItem.fromJson(Map<String, dynamic>.from(item)),
+          (item) => SubmitQueueItem.fromJson(
+            JsonStorageCodec.normalizeMap(item) ?? const <String, dynamic>{},
+          ),
         )
         .where((item) => item.status != SubmitQueueStatus.done.name)
         .toList(growable: false);

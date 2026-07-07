@@ -305,11 +305,25 @@ class _HeaderCard extends StatelessWidget {
                 labelText: 'Template Catatan Proses',
                 prefixIcon: Icon(Icons.view_list_outlined),
               ),
+              selectedItemBuilder: (context) => [
+                for (final indexedTemplate in templates.indexed)
+                  Text(
+                    'Template ${indexedTemplate.$1 + 1}',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+              ],
               items: [
-                for (final template in templates)
+                for (final indexedTemplate in templates.indexed)
                   DropdownMenuItem(
-                    value: template.id,
-                    child: Text(template.name),
+                    value: indexedTemplate.$2.id,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 300),
+                      child: Text(
+                        'Template ${indexedTemplate.$1 + 1} - ${indexedTemplate.$2.name}',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ),
               ],
               onChanged: onTemplateChanged,

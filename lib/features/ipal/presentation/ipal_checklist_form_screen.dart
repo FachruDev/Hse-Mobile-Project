@@ -59,7 +59,10 @@ class _IpalChecklistFormScreenState
           final template = _selectedTemplate(templates);
           if (template == null) return const _EmptyChecklistState();
 
-          final groupedItems = _groupItems(template.items);
+          final activeItems = template.items
+              .where((item) => item.isActive)
+              .toList(growable: false);
+          final groupedItems = _groupItems(activeItems);
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -76,6 +79,11 @@ class _IpalChecklistFormScreenState
                     _fieldRevision++;
                   });
                 },
+              ),
+              const SizedBox(height: 16),
+              _ChecklistCompletionPanel(
+                items: activeItems,
+                statuses: _statuses,
               ),
               const SizedBox(height: 16),
               for (final entry in groupedItems.entries) ...[
@@ -154,7 +162,7 @@ class _IpalChecklistFormScreenState
     List<IpalChecklistItem> items,
   ) {
     final grouped = <String, List<IpalChecklistItem>>{};
-    for (final item in items.where((item) => item.isActive)) {
+    for (final item in items) {
       grouped.putIfAbsent(item.category, () => []).add(item);
     }
     return grouped;
@@ -172,7 +180,14 @@ class _IpalChecklistFormScreenState
   }
 
   void _setStatus(int itemId, String value) {
-    _statuses[itemId.toString()] = value;
+    setState(() {
+      if (value.isEmpty) {
+        _statuses.remove(itemId.toString());
+        return;
+      }
+
+      _statuses[itemId.toString()] = value;
+    });
   }
 
   void _setNote(int itemId, String value) {
@@ -392,6 +407,136 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
+class _ChecklistCompletionPanel extends StatelessWidget {
+  const _ChecklistCompletionPanel({
+    required this.items,
+    required this.statuses,
+  });
+
+  final List<IpalChecklistItem> items;
+  final Map<String, String> statuses;
+
+  @override
+  Widget build(BuildContext context) {
+    final completedItems = items
+        .where((item) => (statuses[item.id.toString()] ?? '').isNotEmpty)
+        .toList(growable: false);
+    final missingItems = items
+        .where((item) => (statuses[item.id.toString()] ?? '').isEmpty)
+        .toList(growable: false);
+    final total = items.length;
+    final completed = completedItems.length;
+    final progress = total == 0 ? 0.0 : completed / total;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.assignment_turned_in_outlined),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Laporan Kelengkapan Checklist',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                  '$completed/$total',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            LinearProgressIndicator(
+              value: progress,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(999),
+              backgroundColor: Colors.red.withValues(alpha: 0.16),
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+            ),
+            const SizedBox(height: 12),
+            _CompletionGroup(
+              title: 'Belum diisi',
+              color: Colors.red,
+              icon: Icons.error_outline,
+              items: missingItems,
+              emptyText: 'Semua item sudah diisi.',
+            ),
+            const SizedBox(height: 10),
+            _CompletionGroup(
+              title: 'Sudah diisi',
+              color: Colors.green,
+              icon: Icons.check_circle_outline,
+              items: completedItems,
+              emptyText: 'Belum ada item yang diisi.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompletionGroup extends StatelessWidget {
+  const _CompletionGroup({
+    required this.title,
+    required this.color,
+    required this.icon,
+    required this.items,
+    required this.emptyText,
+  });
+
+  final String title;
+  final Color color;
+  final IconData icon;
+  final List<IpalChecklistItem> items;
+  final String emptyText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 6),
+            Text(
+              '$title (${items.length})',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        if (items.isEmpty)
+          Text(emptyText, style: Theme.of(context).textTheme.bodySmall)
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final item in items)
+                Chip(
+                  label: Text(item.name, overflow: TextOverflow.ellipsis),
+                  avatar: Icon(icon, color: color, size: 16),
+                  side: BorderSide(color: color.withValues(alpha: 0.35)),
+                  backgroundColor: color.withValues(alpha: 0.08),
+                  labelStyle: TextStyle(color: color),
+                ),
+            ],
+          ),
+      ],
+    );
+  }
+}
+
 class _ChecklistCategoryCard extends StatelessWidget {
   const _ChecklistCategoryCard({
     required this.category,
@@ -432,6 +577,7 @@ class _ChecklistCategoryCard extends StatelessWidget {
                 status: statuses[item.id.toString()],
                 note: notes[item.id.toString()],
                 attachmentPath: attachmentPaths[item.id.toString()],
+                isComplete: (statuses[item.id.toString()] ?? '').isNotEmpty,
                 onStatusChanged: (value) => onStatusChanged(item.id, value),
                 onNoteChanged: (value) => onNoteChanged(item.id, value),
                 onPickGallery: () =>
@@ -455,6 +601,7 @@ class _ChecklistItemField extends StatelessWidget {
     required this.status,
     required this.note,
     required this.attachmentPath,
+    required this.isComplete,
     required this.onStatusChanged,
     required this.onNoteChanged,
     required this.onPickGallery,
@@ -466,6 +613,7 @@ class _ChecklistItemField extends StatelessWidget {
   final String? status;
   final String? note;
   final String? attachmentPath;
+  final bool isComplete;
   final ValueChanged<String> onStatusChanged;
   final ValueChanged<String> onNoteChanged;
   final VoidCallback onPickGallery;
@@ -476,16 +624,45 @@ class _ChecklistItemField extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
+        color: (isComplete ? Colors.green : Colors.red).withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: (isComplete ? Colors.green : Colors.red).withValues(
+            alpha: 0.38,
+          ),
+        ),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(item.name, style: Theme.of(context).textTheme.titleMedium),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    item.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text(isComplete ? 'Sudah diisi' : 'Belum diisi'),
+                  visualDensity: VisualDensity.compact,
+                  side: BorderSide(
+                    color: (isComplete ? Colors.green : Colors.red).withValues(
+                      alpha: 0.35,
+                    ),
+                  ),
+                  backgroundColor: Colors.white,
+                  labelStyle: TextStyle(
+                    color: isComplete ? Colors.green : Colors.red,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
             if (item.standardCondition?.isNotEmpty == true) ...[
               const SizedBox(height: 8),
               Text(
