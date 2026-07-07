@@ -20,9 +20,11 @@ class IpalProcessPayloadBuilder {
   }
 
   static List<Map<String, dynamic>> buildBatchPayload({
-    required List<IpalProcessItem> batchItems,
+    required List<IpalProcessSection> batchSections,
     required List<IpalBatchDraft> batches,
   }) {
+    final batchItems = [for (final section in batchSections) ...section.items];
+
     return [
       for (final batch in batches)
         {

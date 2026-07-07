@@ -29,11 +29,6 @@ class IpalProcessRepositoryImpl implements IpalProcessRepository {
   Future<IpalProcessMaster> getProcessMaster({
     bool forceRefresh = false,
   }) async {
-    if (!forceRefresh) {
-      final cached = _masterCache.readJsonMap(_masterCacheKey);
-      if (cached != null) return IpalProcessMaster.fromJson(cached);
-    }
-
     try {
       final master = await _remoteDataSource.getProcessMaster();
       await _masterCache.writeJson(_masterCacheKey, master.toJson());

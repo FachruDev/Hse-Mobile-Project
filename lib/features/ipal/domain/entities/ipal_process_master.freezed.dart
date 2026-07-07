@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$IpalProcessMaster {
 
- List<IpalProcessTemplate> get templates;@JsonKey(name: 'batch_items') List<IpalProcessItem> get batchItems;
+ List<IpalProcessTemplate> get templates;@JsonKey(name: 'batch_sections') List<IpalProcessSection> get batchSections;@JsonKey(name: 'batch_items') List<IpalProcessItem> get batchItems;
 /// Create a copy of IpalProcessMaster
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $IpalProcessMasterCopyWith<IpalProcessMaster> get copyWith => _$IpalProcessMaste
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessMaster&&const DeepCollectionEquality().equals(other.templates, templates)&&const DeepCollectionEquality().equals(other.batchItems, batchItems));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessMaster&&const DeepCollectionEquality().equals(other.templates, templates)&&const DeepCollectionEquality().equals(other.batchSections, batchSections)&&const DeepCollectionEquality().equals(other.batchItems, batchItems));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(templates),const DeepCollectionEquality().hash(batchItems));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(templates),const DeepCollectionEquality().hash(batchSections),const DeepCollectionEquality().hash(batchItems));
 
 @override
 String toString() {
-  return 'IpalProcessMaster(templates: $templates, batchItems: $batchItems)';
+  return 'IpalProcessMaster(templates: $templates, batchSections: $batchSections, batchItems: $batchItems)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $IpalProcessMasterCopyWith<$Res>  {
   factory $IpalProcessMasterCopyWith(IpalProcessMaster value, $Res Function(IpalProcessMaster) _then) = _$IpalProcessMasterCopyWithImpl;
 @useResult
 $Res call({
- List<IpalProcessTemplate> templates,@JsonKey(name: 'batch_items') List<IpalProcessItem> batchItems
+ List<IpalProcessTemplate> templates,@JsonKey(name: 'batch_sections') List<IpalProcessSection> batchSections,@JsonKey(name: 'batch_items') List<IpalProcessItem> batchItems
 });
 
 
@@ -65,10 +65,11 @@ class _$IpalProcessMasterCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessMaster
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? templates = null,Object? batchItems = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? templates = null,Object? batchSections = null,Object? batchItems = null,}) {
   return _then(_self.copyWith(
 templates: null == templates ? _self.templates : templates // ignore: cast_nullable_to_non_nullable
-as List<IpalProcessTemplate>,batchItems: null == batchItems ? _self.batchItems : batchItems // ignore: cast_nullable_to_non_nullable
+as List<IpalProcessTemplate>,batchSections: null == batchSections ? _self.batchSections : batchSections // ignore: cast_nullable_to_non_nullable
+as List<IpalProcessSection>,batchItems: null == batchItems ? _self.batchItems : batchItems // ignore: cast_nullable_to_non_nullable
 as List<IpalProcessItem>,
   ));
 }
@@ -154,10 +155,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<IpalProcessTemplate> templates, @JsonKey(name: 'batch_items')  List<IpalProcessItem> batchItems)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( List<IpalProcessTemplate> templates, @JsonKey(name: 'batch_sections')  List<IpalProcessSection> batchSections, @JsonKey(name: 'batch_items')  List<IpalProcessItem> batchItems)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IpalProcessMaster() when $default != null:
-return $default(_that.templates,_that.batchItems);case _:
+return $default(_that.templates,_that.batchSections,_that.batchItems);case _:
   return orElse();
 
 }
@@ -175,10 +176,10 @@ return $default(_that.templates,_that.batchItems);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<IpalProcessTemplate> templates, @JsonKey(name: 'batch_items')  List<IpalProcessItem> batchItems)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( List<IpalProcessTemplate> templates, @JsonKey(name: 'batch_sections')  List<IpalProcessSection> batchSections, @JsonKey(name: 'batch_items')  List<IpalProcessItem> batchItems)  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessMaster():
-return $default(_that.templates,_that.batchItems);case _:
+return $default(_that.templates,_that.batchSections,_that.batchItems);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -195,10 +196,10 @@ return $default(_that.templates,_that.batchItems);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<IpalProcessTemplate> templates, @JsonKey(name: 'batch_items')  List<IpalProcessItem> batchItems)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( List<IpalProcessTemplate> templates, @JsonKey(name: 'batch_sections')  List<IpalProcessSection> batchSections, @JsonKey(name: 'batch_items')  List<IpalProcessItem> batchItems)?  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessMaster() when $default != null:
-return $default(_that.templates,_that.batchItems);case _:
+return $default(_that.templates,_that.batchSections,_that.batchItems);case _:
   return null;
 
 }
@@ -210,7 +211,7 @@ return $default(_that.templates,_that.batchItems);case _:
 @JsonSerializable()
 
 class _IpalProcessMaster implements IpalProcessMaster {
-  const _IpalProcessMaster({final  List<IpalProcessTemplate> templates = const <IpalProcessTemplate>[], @JsonKey(name: 'batch_items') final  List<IpalProcessItem> batchItems = const <IpalProcessItem>[]}): _templates = templates,_batchItems = batchItems;
+  const _IpalProcessMaster({final  List<IpalProcessTemplate> templates = const <IpalProcessTemplate>[], @JsonKey(name: 'batch_sections') final  List<IpalProcessSection> batchSections = const <IpalProcessSection>[], @JsonKey(name: 'batch_items') final  List<IpalProcessItem> batchItems = const <IpalProcessItem>[]}): _templates = templates,_batchSections = batchSections,_batchItems = batchItems;
   factory _IpalProcessMaster.fromJson(Map<String, dynamic> json) => _$IpalProcessMasterFromJson(json);
 
  final  List<IpalProcessTemplate> _templates;
@@ -218,6 +219,13 @@ class _IpalProcessMaster implements IpalProcessMaster {
   if (_templates is EqualUnmodifiableListView) return _templates;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableListView(_templates);
+}
+
+ final  List<IpalProcessSection> _batchSections;
+@override@JsonKey(name: 'batch_sections') List<IpalProcessSection> get batchSections {
+  if (_batchSections is EqualUnmodifiableListView) return _batchSections;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_batchSections);
 }
 
  final  List<IpalProcessItem> _batchItems;
@@ -241,16 +249,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessMaster&&const DeepCollectionEquality().equals(other._templates, _templates)&&const DeepCollectionEquality().equals(other._batchItems, _batchItems));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessMaster&&const DeepCollectionEquality().equals(other._templates, _templates)&&const DeepCollectionEquality().equals(other._batchSections, _batchSections)&&const DeepCollectionEquality().equals(other._batchItems, _batchItems));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_templates),const DeepCollectionEquality().hash(_batchItems));
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_templates),const DeepCollectionEquality().hash(_batchSections),const DeepCollectionEquality().hash(_batchItems));
 
 @override
 String toString() {
-  return 'IpalProcessMaster(templates: $templates, batchItems: $batchItems)';
+  return 'IpalProcessMaster(templates: $templates, batchSections: $batchSections, batchItems: $batchItems)';
 }
 
 
@@ -261,7 +269,7 @@ abstract mixin class _$IpalProcessMasterCopyWith<$Res> implements $IpalProcessMa
   factory _$IpalProcessMasterCopyWith(_IpalProcessMaster value, $Res Function(_IpalProcessMaster) _then) = __$IpalProcessMasterCopyWithImpl;
 @override @useResult
 $Res call({
- List<IpalProcessTemplate> templates,@JsonKey(name: 'batch_items') List<IpalProcessItem> batchItems
+ List<IpalProcessTemplate> templates,@JsonKey(name: 'batch_sections') List<IpalProcessSection> batchSections,@JsonKey(name: 'batch_items') List<IpalProcessItem> batchItems
 });
 
 
@@ -278,10 +286,11 @@ class __$IpalProcessMasterCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessMaster
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? templates = null,Object? batchItems = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? templates = null,Object? batchSections = null,Object? batchItems = null,}) {
   return _then(_IpalProcessMaster(
 templates: null == templates ? _self._templates : templates // ignore: cast_nullable_to_non_nullable
-as List<IpalProcessTemplate>,batchItems: null == batchItems ? _self._batchItems : batchItems // ignore: cast_nullable_to_non_nullable
+as List<IpalProcessTemplate>,batchSections: null == batchSections ? _self._batchSections : batchSections // ignore: cast_nullable_to_non_nullable
+as List<IpalProcessSection>,batchItems: null == batchItems ? _self._batchItems : batchItems // ignore: cast_nullable_to_non_nullable
 as List<IpalProcessItem>,
   ));
 }
@@ -568,7 +577,7 @@ as List<IpalProcessSection>,
 /// @nodoc
 mixin _$IpalProcessSection {
 
- int get id; String get name; List<IpalProcessItem> get items;
+ int get id; String get name;@JsonKey(name: 'order_no') int? get orderNo; List<IpalProcessItem> get items;
 /// Create a copy of IpalProcessSection
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -581,16 +590,16 @@ $IpalProcessSectionCopyWith<IpalProcessSection> get copyWith => _$IpalProcessSec
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessSection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other.items, items));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessSection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.orderNo, orderNo) || other.orderNo == orderNo)&&const DeepCollectionEquality().equals(other.items, items));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,const DeepCollectionEquality().hash(items));
+int get hashCode => Object.hash(runtimeType,id,name,orderNo,const DeepCollectionEquality().hash(items));
 
 @override
 String toString() {
-  return 'IpalProcessSection(id: $id, name: $name, items: $items)';
+  return 'IpalProcessSection(id: $id, name: $name, orderNo: $orderNo, items: $items)';
 }
 
 
@@ -601,7 +610,7 @@ abstract mixin class $IpalProcessSectionCopyWith<$Res>  {
   factory $IpalProcessSectionCopyWith(IpalProcessSection value, $Res Function(IpalProcessSection) _then) = _$IpalProcessSectionCopyWithImpl;
 @useResult
 $Res call({
- int id, String name, List<IpalProcessItem> items
+ int id, String name,@JsonKey(name: 'order_no') int? orderNo, List<IpalProcessItem> items
 });
 
 
@@ -618,11 +627,12 @@ class _$IpalProcessSectionCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessSection
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? items = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? orderNo = freezed,Object? items = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
+as String,orderNo: freezed == orderNo ? _self.orderNo : orderNo // ignore: cast_nullable_to_non_nullable
+as int?,items: null == items ? _self.items : items // ignore: cast_nullable_to_non_nullable
 as List<IpalProcessItem>,
   ));
 }
@@ -708,10 +718,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name,  List<IpalProcessItem> items)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'order_no')  int? orderNo,  List<IpalProcessItem> items)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IpalProcessSection() when $default != null:
-return $default(_that.id,_that.name,_that.items);case _:
+return $default(_that.id,_that.name,_that.orderNo,_that.items);case _:
   return orElse();
 
 }
@@ -729,10 +739,10 @@ return $default(_that.id,_that.name,_that.items);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name,  List<IpalProcessItem> items)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String name, @JsonKey(name: 'order_no')  int? orderNo,  List<IpalProcessItem> items)  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessSection():
-return $default(_that.id,_that.name,_that.items);case _:
+return $default(_that.id,_that.name,_that.orderNo,_that.items);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -749,10 +759,10 @@ return $default(_that.id,_that.name,_that.items);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name,  List<IpalProcessItem> items)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String name, @JsonKey(name: 'order_no')  int? orderNo,  List<IpalProcessItem> items)?  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessSection() when $default != null:
-return $default(_that.id,_that.name,_that.items);case _:
+return $default(_that.id,_that.name,_that.orderNo,_that.items);case _:
   return null;
 
 }
@@ -764,11 +774,12 @@ return $default(_that.id,_that.name,_that.items);case _:
 @JsonSerializable()
 
 class _IpalProcessSection implements IpalProcessSection {
-  const _IpalProcessSection({required this.id, required this.name, final  List<IpalProcessItem> items = const <IpalProcessItem>[]}): _items = items;
+  const _IpalProcessSection({required this.id, required this.name, @JsonKey(name: 'order_no') this.orderNo, final  List<IpalProcessItem> items = const <IpalProcessItem>[]}): _items = items;
   factory _IpalProcessSection.fromJson(Map<String, dynamic> json) => _$IpalProcessSectionFromJson(json);
 
 @override final  int id;
 @override final  String name;
+@override@JsonKey(name: 'order_no') final  int? orderNo;
  final  List<IpalProcessItem> _items;
 @override@JsonKey() List<IpalProcessItem> get items {
   if (_items is EqualUnmodifiableListView) return _items;
@@ -790,16 +801,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessSection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&const DeepCollectionEquality().equals(other._items, _items));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessSection&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.orderNo, orderNo) || other.orderNo == orderNo)&&const DeepCollectionEquality().equals(other._items, _items));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,const DeepCollectionEquality().hash(_items));
+int get hashCode => Object.hash(runtimeType,id,name,orderNo,const DeepCollectionEquality().hash(_items));
 
 @override
 String toString() {
-  return 'IpalProcessSection(id: $id, name: $name, items: $items)';
+  return 'IpalProcessSection(id: $id, name: $name, orderNo: $orderNo, items: $items)';
 }
 
 
@@ -810,7 +821,7 @@ abstract mixin class _$IpalProcessSectionCopyWith<$Res> implements $IpalProcessS
   factory _$IpalProcessSectionCopyWith(_IpalProcessSection value, $Res Function(_IpalProcessSection) _then) = __$IpalProcessSectionCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String name, List<IpalProcessItem> items
+ int id, String name,@JsonKey(name: 'order_no') int? orderNo, List<IpalProcessItem> items
 });
 
 
@@ -827,11 +838,12 @@ class __$IpalProcessSectionCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessSection
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? items = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? name = null,Object? orderNo = freezed,Object? items = null,}) {
   return _then(_IpalProcessSection(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
-as String,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
+as String,orderNo: freezed == orderNo ? _self.orderNo : orderNo // ignore: cast_nullable_to_non_nullable
+as int?,items: null == items ? _self._items : items // ignore: cast_nullable_to_non_nullable
 as List<IpalProcessItem>,
   ));
 }
@@ -843,7 +855,7 @@ as List<IpalProcessItem>,
 /// @nodoc
 mixin _$IpalProcessItem {
 
- int get id; String get label;@JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) HseInputType get inputType; String? get standard;@JsonKey(name: 'order_no') int? get orderNo;
+ int get id; String get label;@JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) HseInputType get inputType; String? get standard; List<FormSelectOption> get options;@JsonKey(name: 'order_no') int? get orderNo;
 /// Create a copy of IpalProcessItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -856,16 +868,16 @@ $IpalProcessItemCopyWith<IpalProcessItem> get copyWith => _$IpalProcessItemCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessItem&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.inputType, inputType) || other.inputType == inputType)&&(identical(other.standard, standard) || other.standard == standard)&&(identical(other.orderNo, orderNo) || other.orderNo == orderNo));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessItem&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.inputType, inputType) || other.inputType == inputType)&&(identical(other.standard, standard) || other.standard == standard)&&const DeepCollectionEquality().equals(other.options, options)&&(identical(other.orderNo, orderNo) || other.orderNo == orderNo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,inputType,standard,orderNo);
+int get hashCode => Object.hash(runtimeType,id,label,inputType,standard,const DeepCollectionEquality().hash(options),orderNo);
 
 @override
 String toString() {
-  return 'IpalProcessItem(id: $id, label: $label, inputType: $inputType, standard: $standard, orderNo: $orderNo)';
+  return 'IpalProcessItem(id: $id, label: $label, inputType: $inputType, standard: $standard, options: $options, orderNo: $orderNo)';
 }
 
 
@@ -876,7 +888,7 @@ abstract mixin class $IpalProcessItemCopyWith<$Res>  {
   factory $IpalProcessItemCopyWith(IpalProcessItem value, $Res Function(IpalProcessItem) _then) = _$IpalProcessItemCopyWithImpl;
 @useResult
 $Res call({
- int id, String label,@JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) HseInputType inputType, String? standard,@JsonKey(name: 'order_no') int? orderNo
+ int id, String label,@JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) HseInputType inputType, String? standard, List<FormSelectOption> options,@JsonKey(name: 'order_no') int? orderNo
 });
 
 
@@ -893,13 +905,14 @@ class _$IpalProcessItemCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? inputType = null,Object? standard = freezed,Object? orderNo = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? label = null,Object? inputType = null,Object? standard = freezed,Object? options = null,Object? orderNo = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,inputType: null == inputType ? _self.inputType : inputType // ignore: cast_nullable_to_non_nullable
 as HseInputType,standard: freezed == standard ? _self.standard : standard // ignore: cast_nullable_to_non_nullable
-as String?,orderNo: freezed == orderNo ? _self.orderNo : orderNo // ignore: cast_nullable_to_non_nullable
+as String?,options: null == options ? _self.options : options // ignore: cast_nullable_to_non_nullable
+as List<FormSelectOption>,orderNo: freezed == orderNo ? _self.orderNo : orderNo // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
 }
@@ -985,10 +998,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson)  HseInputType inputType,  String? standard, @JsonKey(name: 'order_no')  int? orderNo)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson)  HseInputType inputType,  String? standard,  List<FormSelectOption> options, @JsonKey(name: 'order_no')  int? orderNo)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IpalProcessItem() when $default != null:
-return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.orderNo);case _:
+return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.options,_that.orderNo);case _:
   return orElse();
 
 }
@@ -1006,10 +1019,10 @@ return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.orderN
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson)  HseInputType inputType,  String? standard, @JsonKey(name: 'order_no')  int? orderNo)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int id,  String label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson)  HseInputType inputType,  String? standard,  List<FormSelectOption> options, @JsonKey(name: 'order_no')  int? orderNo)  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessItem():
-return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.orderNo);case _:
+return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.options,_that.orderNo);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -1026,10 +1039,10 @@ return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.orderN
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson)  HseInputType inputType,  String? standard, @JsonKey(name: 'order_no')  int? orderNo)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int id,  String label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson)  HseInputType inputType,  String? standard,  List<FormSelectOption> options, @JsonKey(name: 'order_no')  int? orderNo)?  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessItem() when $default != null:
-return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.orderNo);case _:
+return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.options,_that.orderNo);case _:
   return null;
 
 }
@@ -1041,13 +1054,20 @@ return $default(_that.id,_that.label,_that.inputType,_that.standard,_that.orderN
 @JsonSerializable()
 
 class _IpalProcessItem implements IpalProcessItem {
-  const _IpalProcessItem({required this.id, required this.label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) required this.inputType, this.standard, @JsonKey(name: 'order_no') this.orderNo});
+  const _IpalProcessItem({required this.id, required this.label, @JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) required this.inputType, this.standard, final  List<FormSelectOption> options = const <FormSelectOption>[], @JsonKey(name: 'order_no') this.orderNo}): _options = options;
   factory _IpalProcessItem.fromJson(Map<String, dynamic> json) => _$IpalProcessItemFromJson(json);
 
 @override final  int id;
 @override final  String label;
 @override@JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) final  HseInputType inputType;
 @override final  String? standard;
+ final  List<FormSelectOption> _options;
+@override@JsonKey() List<FormSelectOption> get options {
+  if (_options is EqualUnmodifiableListView) return _options;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableListView(_options);
+}
+
 @override@JsonKey(name: 'order_no') final  int? orderNo;
 
 /// Create a copy of IpalProcessItem
@@ -1063,16 +1083,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessItem&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.inputType, inputType) || other.inputType == inputType)&&(identical(other.standard, standard) || other.standard == standard)&&(identical(other.orderNo, orderNo) || other.orderNo == orderNo));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessItem&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.inputType, inputType) || other.inputType == inputType)&&(identical(other.standard, standard) || other.standard == standard)&&const DeepCollectionEquality().equals(other._options, _options)&&(identical(other.orderNo, orderNo) || other.orderNo == orderNo));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,inputType,standard,orderNo);
+int get hashCode => Object.hash(runtimeType,id,label,inputType,standard,const DeepCollectionEquality().hash(_options),orderNo);
 
 @override
 String toString() {
-  return 'IpalProcessItem(id: $id, label: $label, inputType: $inputType, standard: $standard, orderNo: $orderNo)';
+  return 'IpalProcessItem(id: $id, label: $label, inputType: $inputType, standard: $standard, options: $options, orderNo: $orderNo)';
 }
 
 
@@ -1083,7 +1103,7 @@ abstract mixin class _$IpalProcessItemCopyWith<$Res> implements $IpalProcessItem
   factory _$IpalProcessItemCopyWith(_IpalProcessItem value, $Res Function(_IpalProcessItem) _then) = __$IpalProcessItemCopyWithImpl;
 @override @useResult
 $Res call({
- int id, String label,@JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) HseInputType inputType, String? standard,@JsonKey(name: 'order_no') int? orderNo
+ int id, String label,@JsonKey(name: 'input_type', fromJson: _inputTypeFromJson, toJson: _inputTypeToJson) HseInputType inputType, String? standard, List<FormSelectOption> options,@JsonKey(name: 'order_no') int? orderNo
 });
 
 
@@ -1100,13 +1120,14 @@ class __$IpalProcessItemCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? inputType = null,Object? standard = freezed,Object? orderNo = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? label = null,Object? inputType = null,Object? standard = freezed,Object? options = null,Object? orderNo = freezed,}) {
   return _then(_IpalProcessItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as int,label: null == label ? _self.label : label // ignore: cast_nullable_to_non_nullable
 as String,inputType: null == inputType ? _self.inputType : inputType // ignore: cast_nullable_to_non_nullable
 as HseInputType,standard: freezed == standard ? _self.standard : standard // ignore: cast_nullable_to_non_nullable
-as String?,orderNo: freezed == orderNo ? _self.orderNo : orderNo // ignore: cast_nullable_to_non_nullable
+as String?,options: null == options ? _self._options : options // ignore: cast_nullable_to_non_nullable
+as List<FormSelectOption>,orderNo: freezed == orderNo ? _self.orderNo : orderNo // ignore: cast_nullable_to_non_nullable
 as int?,
   ));
 }

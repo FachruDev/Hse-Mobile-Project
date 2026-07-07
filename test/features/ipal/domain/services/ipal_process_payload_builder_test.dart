@@ -49,15 +49,21 @@ void main() {
   });
 
   test('buildBatchPayload mempertahankan batch_no', () {
-    const batchItems = [
-      IpalProcessItem(id: 1, label: 'pH', inputType: HseInputType.number),
+    const batchSections = [
+      IpalProcessSection(
+        id: 1,
+        name: 'Air limbah awal',
+        items: [
+          IpalProcessItem(id: 1, label: 'pH', inputType: HseInputType.number),
+        ],
+      ),
     ];
     const batches = [
       IpalBatchDraft(batchNo: 3, values: {'1': '6.8'}),
     ];
 
     final payload = IpalProcessPayloadBuilder.buildBatchPayload(
-      batchItems: batchItems,
+      batchSections: batchSections,
       batches: batches,
     );
 

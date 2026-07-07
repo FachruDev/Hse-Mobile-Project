@@ -7,6 +7,8 @@ enum HseInputType {
   text,
   number,
   dropdown,
+  optionStandard,
+  optionWithManual,
   checklist,
   date,
   time;
@@ -15,6 +17,8 @@ enum HseInputType {
     return switch (value?.toLowerCase().trim()) {
       'number' => HseInputType.number,
       'dropdown' || 'select' => HseInputType.dropdown,
+      'option_standard' => HseInputType.optionStandard,
+      'option_with_manual' => HseInputType.optionWithManual,
       'checklist' || 'status' => HseInputType.checklist,
       'date' => HseInputType.date,
       'time' => HseInputType.time,
@@ -26,6 +30,8 @@ enum HseInputType {
     HseInputType.text => 'text',
     HseInputType.number => 'number',
     HseInputType.dropdown => 'dropdown',
+    HseInputType.optionStandard => 'option_standard',
+    HseInputType.optionWithManual => 'option_with_manual',
     HseInputType.checklist => 'checklist',
     HseInputType.date => 'date',
     HseInputType.time => 'time',

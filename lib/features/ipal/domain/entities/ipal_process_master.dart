@@ -9,6 +9,9 @@ part 'ipal_process_master.g.dart';
 abstract class IpalProcessMaster with _$IpalProcessMaster {
   const factory IpalProcessMaster({
     @Default(<IpalProcessTemplate>[]) List<IpalProcessTemplate> templates,
+    @Default(<IpalProcessSection>[])
+    @JsonKey(name: 'batch_sections')
+    List<IpalProcessSection> batchSections,
     @Default(<IpalProcessItem>[])
     @JsonKey(name: 'batch_items')
     List<IpalProcessItem> batchItems,
@@ -27,9 +30,17 @@ abstract class IpalProcessMaster with _$IpalProcessMaster {
     final batchItems = _listValue(
       json['batch_items'] ?? json['batchItems'] ?? json['batch'],
     );
+    final batchSections = _listValue(
+      json['batch_sections'] ??
+          json['batchSections'] ??
+          json['batch_processes'],
+    );
 
     return IpalProcessMaster.fromJson({
       'templates': templates.map(_normalizeTemplate).toList(growable: false),
+      'batch_sections': batchSections
+          .map(_normalizeSection)
+          .toList(growable: false),
       'batch_items': batchItems.map(_normalizeItem).toList(growable: false),
     });
   }
@@ -52,6 +63,7 @@ abstract class IpalProcessSection with _$IpalProcessSection {
   const factory IpalProcessSection({
     required int id,
     required String name,
+    @JsonKey(name: 'order_no') int? orderNo,
     @Default(<IpalProcessItem>[]) List<IpalProcessItem> items,
   }) = _IpalProcessSection;
 
@@ -71,6 +83,7 @@ abstract class IpalProcessItem with _$IpalProcessItem {
     )
     required HseInputType inputType,
     String? standard,
+    @Default(<FormSelectOption>[]) List<FormSelectOption> options,
     @JsonKey(name: 'order_no') int? orderNo,
   }) = _IpalProcessItem;
 
@@ -96,6 +109,7 @@ Map<String, dynamic> _normalizeSection(Map<String, dynamic> json) {
   return {
     'id': _intValue(json['id']),
     'name': _stringValue(json['name'] ?? json['label'], fallback: 'Bagian'),
+    'order_no': _nullableIntValue(json['order_no'] ?? json['orderNo']),
     'items': _listValue(
       json['items'] ?? json['process_items'] ?? json['processItems'],
     ).map(_normalizeItem).toList(growable: false),
@@ -116,9 +130,39 @@ Map<String, dynamic> _normalizeItem(Map<String, dynamic> json) {
         json['inputtype'] ??
         json['inputType'] ??
         json['type'],
-    'standard': json['standard']?.toString(),
+    'standard': (json['standard_condition'] ?? json['standard'])?.toString(),
+    'options': _normalizeOptions(json),
     'order_no': _nullableIntValue(json['order_no'] ?? json['orderNo']),
   };
+}
+
+List<Map<String, dynamic>> _normalizeOptions(Map<String, dynamic> json) {
+  final rawOptions =
+      json['options'] ?? json['option_values'] ?? json['choices'];
+  if (rawOptions is! List) return const [];
+
+  return rawOptions
+      .map((option) {
+        if (option is Map) {
+          final map = Map<String, dynamic>.from(option);
+          final value = _stringValue(
+            map['value'] ?? map['id'] ?? map['name'] ?? map['label'],
+            fallback: '',
+          );
+          final label = _stringValue(
+            map['label'] ?? map['name'] ?? value,
+            fallback: value,
+          );
+          return {'value': value, 'label': label};
+        }
+
+        final value = option.toString();
+        return {'value': value, 'label': value};
+      })
+      .where((option) {
+        return option['value'].toString().trim().isNotEmpty;
+      })
+      .toList(growable: false);
 }
 
 List<Map<String, dynamic>> _listValue(Object? value) {

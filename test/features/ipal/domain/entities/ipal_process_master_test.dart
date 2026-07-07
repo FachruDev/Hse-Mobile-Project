@@ -16,25 +16,48 @@ void main() {
               'items': [
                 {
                   'id': 100,
-                  'label': 'Debit inlet',
+                  'name': 'Debit inlet',
                   'inputtype': 'number',
-                  'standard': 'Terukur',
+                  'standard_condition': 'Terukur',
                 },
               ],
             },
           ],
         },
       ],
-      'batch_items': [
-        {'id': 1, 'label': 'pH', 'inputtype': 'number', 'order_no': '1'},
+      'batch_sections': [
+        {
+          'id': 1,
+          'name': 'Air limbah awal',
+          'order_no': '1',
+          'items': [
+            {
+              'id': 1,
+              'name': 'pH',
+              'inputtype': 'option_standard',
+              'order_no': '1',
+              'options': ['Asam', 'Netral', 'Basa'],
+            },
+          ],
+        },
       ],
     });
 
+    final processItem = master.templates.single.sections.single.items.single;
+    final batchSection = master.batchSections.single;
+    final batchItem = batchSection.items.single;
+
     expect(master.templates.single.id, 1);
-    expect(
-      master.templates.single.sections.single.items.single.inputType,
-      HseInputType.number,
-    );
-    expect(master.batchItems.single.orderNo, 1);
+    expect(processItem.label, 'Debit inlet');
+    expect(processItem.standard, 'Terukur');
+    expect(processItem.inputType, HseInputType.number);
+    expect(batchSection.name, 'Air limbah awal');
+    expect(batchSection.orderNo, 1);
+    expect(batchItem.inputType, HseInputType.optionStandard);
+    expect(batchItem.options.map((option) => option.value), [
+      'Asam',
+      'Netral',
+      'Basa',
+    ]);
   });
 }

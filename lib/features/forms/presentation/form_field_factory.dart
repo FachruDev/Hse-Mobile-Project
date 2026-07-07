@@ -24,6 +24,16 @@ class FormFieldFactory {
         label: definition.label,
         options: definition.options,
       ),
+      HseInputType.optionStandard => AppDropdown(
+        controlName: controlName,
+        label: definition.label,
+        options: definition.options,
+      ),
+      HseInputType.optionWithManual => AppDropdown(
+        controlName: controlName,
+        label: definition.label,
+        options: definition.options,
+      ),
       HseInputType.checklist => AppChecklistItem(
         controlName: controlName,
         label: definition.label,

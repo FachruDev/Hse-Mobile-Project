@@ -51,6 +51,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
           final template = _selectedTemplate(master);
           if (template == null) return const _EmptyMasterState();
+          final batchSections = master.effectiveBatchSections;
 
           return Form(
             key: _formKey,
@@ -87,7 +88,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                 ],
                 _BatchMixingCard(
                   key: ValueKey('batch_$_fieldRevision'),
-                  batchItems: master.batchItems,
+                  batchSections: batchSections,
                   batches: _batches,
                   onAddBatch: _addBatch,
                   onRemoveBatch: _removeBatch,
@@ -98,8 +99,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                 _ActionBar(
                   saving: _saving,
                   onSaveDraft: () => _saveDraft(template),
-                  onValidate: () =>
-                      _validatePayload(template, master.batchItems),
+                  onValidate: () => _validatePayload(template, batchSections),
                   onReset: _resetDraft,
                 ),
                 const SizedBox(height: 24),
@@ -217,7 +217,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
   void _validatePayload(
     IpalProcessTemplate template,
-    List<IpalProcessItem> batchItems,
+    List<IpalProcessSection> batchSections,
   ) {
     final isValid = _formKey.currentState?.validate() ?? false;
     if (!isValid) return;
@@ -228,7 +228,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       draft: draft,
     );
     IpalProcessPayloadBuilder.buildBatchPayload(
-      batchItems: batchItems,
+      batchSections: batchSections,
       batches: draft.batches,
     );
 
@@ -396,7 +396,7 @@ class _ProcessSectionCard extends StatelessWidget {
 
 class _BatchMixingCard extends StatelessWidget {
   const _BatchMixingCard({
-    required this.batchItems,
+    required this.batchSections,
     required this.batches,
     required this.onAddBatch,
     required this.onRemoveBatch,
@@ -405,7 +405,7 @@ class _BatchMixingCard extends StatelessWidget {
     super.key,
   });
 
-  final List<IpalProcessItem> batchItems;
+  final List<IpalProcessSection> batchSections;
   final List<IpalBatchDraft> batches;
   final VoidCallback onAddBatch;
   final ValueChanged<int> onRemoveBatch;
@@ -440,23 +440,23 @@ class _BatchMixingCard extends StatelessWidget {
                 ),
                 IconButton.filled(
                   tooltip: 'Tambah Batch',
-                  onPressed: batchItems.isEmpty ? null : onAddBatch,
+                  onPressed: batchSections.isEmpty ? null : onAddBatch,
                   icon: const Icon(Icons.add),
                 ),
               ],
             ),
-            if (batchItems.isEmpty) ...[
+            if (batchSections.isEmpty) ...[
               const SizedBox(height: 12),
               const Text('Master item batch belum tersedia.'),
             ],
-            if (batches.isEmpty && batchItems.isNotEmpty) ...[
+            if (batches.isEmpty && batchSections.isNotEmpty) ...[
               const SizedBox(height: 12),
               const _EmptyBatchHint(),
             ],
             for (final batch in batches) ...[
               const SizedBox(height: 16),
               _BatchCard(
-                batchItems: batchItems,
+                batchSections: batchSections,
                 batch: batch,
                 onRemove: () => onRemoveBatch(batch.batchNo),
                 onValueChanged: (itemId, value) =>
@@ -474,14 +474,14 @@ class _BatchMixingCard extends StatelessWidget {
 
 class _BatchCard extends StatelessWidget {
   const _BatchCard({
-    required this.batchItems,
+    required this.batchSections,
     required this.batch,
     required this.onRemove,
     required this.onValueChanged,
     required this.onNoteChanged,
   });
 
-  final List<IpalProcessItem> batchItems;
+  final List<IpalProcessSection> batchSections;
   final IpalBatchDraft batch;
   final VoidCallback onRemove;
   final void Function(int itemId, String value) onValueChanged;
@@ -516,7 +516,51 @@ class _BatchCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            for (final item in batchItems) ...[
+            for (final section in batchSections) ...[
+              _BatchSectionPanel(
+                section: section,
+                batch: batch,
+                onValueChanged: onValueChanged,
+                onNoteChanged: onNoteChanged,
+              ),
+              const SizedBox(height: 12),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BatchSectionPanel extends StatelessWidget {
+  const _BatchSectionPanel({
+    required this.section,
+    required this.batch,
+    required this.onValueChanged,
+    required this.onNoteChanged,
+  });
+
+  final IpalProcessSection section;
+  final IpalBatchDraft batch;
+  final void Function(int itemId, String value) onValueChanged;
+  final void Function(int itemId, String value) onNoteChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(section.name, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            for (final item in section.items) ...[
               _DynamicProcessField(
                 item: item,
                 value: batch.values[item.id.toString()],
@@ -533,7 +577,7 @@ class _BatchCard extends StatelessWidget {
   }
 }
 
-class _DynamicProcessField extends StatelessWidget {
+class _DynamicProcessField extends StatefulWidget {
   const _DynamicProcessField({
     required this.item,
     required this.value,
@@ -549,44 +593,229 @@ class _DynamicProcessField extends StatelessWidget {
   final ValueChanged<String> onNoteChanged;
 
   @override
+  State<_DynamicProcessField> createState() => _DynamicProcessFieldState();
+}
+
+class _DynamicProcessFieldState extends State<_DynamicProcessField> {
+  static const _manualValue = '__manual__';
+
+  late final TextEditingController _manualController;
+  late bool _isManual;
+
+  @override
+  void initState() {
+    super.initState();
+    _isManual = _shouldUseManual(widget.value);
+    _manualController = TextEditingController(
+      text: _isManual ? widget.value : null,
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant _DynamicProcessField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.value != widget.value || oldWidget.item != widget.item) {
+      _isManual = _shouldUseManual(widget.value);
+      if (_isManual && _manualController.text != widget.value) {
+        _manualController.text = widget.value ?? '';
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _manualController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isNumber = item.inputType == HseInputType.number;
+    final isNumber = widget.item.inputType == HseInputType.number;
+    final isDropdown = _shouldRenderDropdown();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextFormField(
-          initialValue: value,
-          keyboardType: isNumber
-              ? const TextInputType.numberWithOptions(decimal: true)
-              : TextInputType.text,
-          decoration: InputDecoration(
-            labelText: item.label,
-            helperText: item.standard,
-            prefixIcon: Icon(isNumber ? Icons.pin_outlined : Icons.notes),
-          ),
-          validator: (input) {
-            final text = input?.trim() ?? '';
-            if (text.isEmpty) return null;
-            if (isNumber && num.tryParse(text) == null) {
-              return 'Isi angka yang valid.';
-            }
-            return null;
-          },
-          onChanged: onValueChanged,
-        ),
+        Text(widget.item.label, style: Theme.of(context).textTheme.titleMedium),
+        if (widget.item.standard?.isNotEmpty == true) ...[
+          const SizedBox(height: 8),
+          _StandardConditionBox(standard: widget.item.standard!),
+        ],
+        const SizedBox(height: 10),
+        if (isDropdown)
+          _buildDropdownField(context)
+        else
+          _buildTextField(isNumber),
         const SizedBox(height: 8),
         TextFormField(
-          initialValue: note,
+          initialValue: widget.note,
           minLines: 1,
           maxLines: 2,
           decoration: const InputDecoration(
             labelText: 'Catatan opsional',
             prefixIcon: Icon(Icons.comment_outlined),
           ),
-          onChanged: onNoteChanged,
+          onChanged: widget.onNoteChanged,
         ),
       ],
+    );
+  }
+
+  Widget _buildTextField(bool isNumber) {
+    return TextFormField(
+      initialValue: widget.value,
+      keyboardType: isNumber
+          ? const TextInputType.numberWithOptions(decimal: true)
+          : TextInputType.text,
+      decoration: InputDecoration(
+        labelText: isNumber ? 'Kondisi aktual (angka)' : 'Kondisi aktual',
+        prefixIcon: Icon(isNumber ? Icons.pin_outlined : Icons.notes),
+      ),
+      validator: (input) {
+        final text = input?.trim() ?? '';
+        if (text.isEmpty) return null;
+        if (isNumber && num.tryParse(text) == null) {
+          return 'Isi angka yang valid.';
+        }
+        return null;
+      },
+      onChanged: widget.onValueChanged,
+    );
+  }
+
+  Widget _buildDropdownField(BuildContext context) {
+    final options = _dropdownOptions();
+    final values = options.map((option) => option.value).toSet();
+    final selectedValue = _isManual
+        ? _manualValue
+        : values.contains(widget.value)
+        ? widget.value
+        : null;
+
+    return Column(
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: selectedValue,
+          decoration: const InputDecoration(
+            labelText: 'Kondisi aktual',
+            prefixIcon: Icon(Icons.fact_check_outlined),
+          ),
+          items: [
+            for (final option in options)
+              DropdownMenuItem(value: option.value, child: Text(option.label)),
+            if (widget.item.inputType == HseInputType.optionWithManual)
+              const DropdownMenuItem(
+                value: _manualValue,
+                child: Text('Lainnya'),
+              ),
+          ],
+          onChanged: (value) {
+            if (value == null) return;
+            if (value == _manualValue) {
+              setState(() => _isManual = true);
+              widget.onValueChanged(_manualController.text);
+              return;
+            }
+
+            setState(() => _isManual = false);
+            widget.onValueChanged(value);
+          },
+        ),
+        if (_isManual) ...[
+          const SizedBox(height: 10),
+          TextFormField(
+            controller: _manualController,
+            decoration: const InputDecoration(
+              labelText: 'Isi kondisi aktual manual',
+              prefixIcon: Icon(Icons.edit_note_outlined),
+            ),
+            validator: (value) {
+              if (_isManual && (value == null || value.trim().isEmpty)) {
+                return 'Kondisi manual wajib diisi.';
+              }
+              return null;
+            },
+            onChanged: widget.onValueChanged,
+          ),
+        ],
+      ],
+    );
+  }
+
+  List<FormSelectOption> _dropdownOptions() {
+    if (widget.item.options.isNotEmpty) return widget.item.options;
+
+    final standard = widget.item.standard?.trim();
+    final standardLabel = standard?.isNotEmpty == true
+        ? standard!
+        : 'Sesuai standar';
+
+    if (widget.item.inputType == HseInputType.optionStandard ||
+        widget.item.inputType == HseInputType.optionWithManual) {
+      return [
+        FormSelectOption(value: standardLabel, label: standardLabel),
+        const FormSelectOption(
+          value: 'Tidak sesuai standar',
+          label: 'Tidak sesuai standar',
+        ),
+        const FormSelectOption(value: 'Tidak berlaku', label: 'Tidak berlaku'),
+      ];
+    }
+
+    return const [];
+  }
+
+  bool _shouldUseManual(String? value) {
+    if (widget.item.inputType != HseInputType.optionWithManual) return false;
+    final text = value?.trim();
+    if (text == null || text.isEmpty) return false;
+    return !_dropdownOptions().any((option) => option.value == text);
+  }
+
+  bool _shouldRenderDropdown() {
+    if (widget.item.inputType == HseInputType.optionStandard ||
+        widget.item.inputType == HseInputType.optionWithManual) {
+      return true;
+    }
+
+    return widget.item.inputType == HseInputType.dropdown &&
+        widget.item.options.isNotEmpty;
+  }
+}
+
+class _StandardConditionBox extends StatelessWidget {
+  const _StandardConditionBox({required this.standard});
+
+  final String standard;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(
+              Icons.task_alt_outlined,
+              size: 18,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Kondisi standar: $standard',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -701,5 +930,14 @@ class _ErrorState extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+extension on IpalProcessMaster {
+  List<IpalProcessSection> get effectiveBatchSections {
+    if (batchSections.isNotEmpty) return batchSections;
+    if (batchItems.isEmpty) return const [];
+
+    return [IpalProcessSection(id: 0, name: 'Batch Mixing', items: batchItems)];
   }
 }
