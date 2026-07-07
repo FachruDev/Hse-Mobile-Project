@@ -4,9 +4,16 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/auth/application/auth_session_controller.dart';
 import '../../features/auth/presentation/login_screen.dart';
-import '../../features/forms/presentation/protected_placeholder_screen.dart';
+import '../../features/b3/presentation/b3_log_detail_screen.dart';
+import '../../features/b3/presentation/b3_log_list_screen.dart';
+import '../../features/b3/presentation/b3_monthly_report_screen.dart';
+import '../../features/b3/presentation/b3_storage_form_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/ipal/presentation/ipal_checklist_form_screen.dart';
+import '../../features/ipal/presentation/ipal_log_detail_screen.dart';
+import '../../features/ipal/presentation/ipal_log_list_screen.dart';
 import '../../features/ipal/presentation/ipal_process_form_screen.dart';
+import '../permissions/app_permissions.dart';
 import 'not_authorized_screen.dart';
 import 'splash_screen.dart';
 
@@ -15,11 +22,36 @@ part 'app_router.g.dart';
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 const _routePermissions = <String, List<String>>{
-  '/form/ipal/proses': ['ipal.logs.create', 'ipal.logs.submit'],
-  '/form/ipal/checklist': ['ipal.logs.create'],
-  '/form/b3': ['b3storage.logs.create'],
-  '/laporan/b3': ['b3storage.monthly-report.view'],
+  '/form/ipal/proses': [
+    AppPermissions.masterProcessView,
+    AppPermissions.masterBatchView,
+    AppPermissions.ipalLogsCreate,
+  ],
+  '/form/ipal/checklist': [
+    AppPermissions.masterChecklistView,
+    AppPermissions.ipalLogsCreate,
+  ],
+  '/form/b3': [
+    AppPermissions.b3StorageMasterView,
+    AppPermissions.b3StorageLogsCreate,
+  ],
+  '/riwayat/ipal': [AppPermissions.ipalLogsView],
+  '/riwayat/b3': [AppPermissions.b3StorageLogsView],
+  '/laporan/b3': [AppPermissions.b3StorageMonthlyReportView],
 };
+
+List<String>? _requiredPermissionsForPath(String path) {
+  final exact = _routePermissions[path];
+  if (exact != null) return exact;
+
+  if (path.startsWith('/riwayat/ipal/')) {
+    return _routePermissions['/riwayat/ipal'];
+  }
+  if (path.startsWith('/riwayat/b3/')) {
+    return _routePermissions['/riwayat/b3'];
+  }
+  return null;
+}
 
 @Riverpod(keepAlive: true)
 GoRouter appRouter(Ref ref) {
@@ -44,9 +76,9 @@ GoRouter appRouter(Ref ref) {
 
       if (isLogin || isSplash) return '/beranda';
 
-      final requiredPermissions = _routePermissions[path];
+      final requiredPermissions = _requiredPermissionsForPath(path);
       if (requiredPermissions != null &&
-          !session.user!.hasAnyPermission(requiredPermissions)) {
+          !session.user!.canAll(requiredPermissions)) {
         return '/tidak-berwenang';
       }
 
@@ -68,27 +100,35 @@ GoRouter appRouter(Ref ref) {
       ),
       GoRoute(
         path: '/form/ipal/checklist',
-        builder: (context, state) => const ProtectedPlaceholderScreen(
-          title: 'Checklist Pemeriksaan Harian',
-          description: 'Status unit dan catatan pemeriksaan.',
-          selectedPath: '/form/ipal/checklist',
-        ),
+        builder: (context, state) => const IpalChecklistFormScreen(),
       ),
       GoRoute(
         path: '/form/b3',
-        builder: (context, state) => const ProtectedPlaceholderScreen(
-          title: 'Form Penyimpanan Limbah B3',
-          description: 'Log masuk atau keluar TPS LB3.',
-          selectedPath: '/form/b3',
+        builder: (context, state) => const B3StorageFormScreen(),
+      ),
+      GoRoute(
+        path: '/riwayat/ipal',
+        builder: (context, state) => const IpalLogListScreen(),
+      ),
+      GoRoute(
+        path: '/riwayat/ipal/:id',
+        builder: (context, state) => IpalLogDetailScreen(
+          logId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
+        ),
+      ),
+      GoRoute(
+        path: '/riwayat/b3',
+        builder: (context, state) => const B3LogListScreen(),
+      ),
+      GoRoute(
+        path: '/riwayat/b3/:id',
+        builder: (context, state) => B3LogDetailScreen(
+          logId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
         ),
       ),
       GoRoute(
         path: '/laporan/b3',
-        builder: (context, state) => const ProtectedPlaceholderScreen(
-          title: 'Laporan Bulanan B3',
-          description: 'Rekap dan approval bulanan penyimpanan limbah B3.',
-          selectedPath: '/laporan/b3',
-        ),
+        builder: (context, state) => const B3MonthlyReportScreen(),
       ),
       GoRoute(
         path: '/tidak-berwenang',

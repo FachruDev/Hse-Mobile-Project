@@ -14,6 +14,8 @@ _SubmitQueueItem _$SubmitQueueItemFromJson(Map<String, dynamic> json) =>
       payload: json['payload'] as Map<String, dynamic>,
       createdAt: DateTime.parse(json['createdAt'] as String),
       attempts: (json['attempts'] as num?)?.toInt() ?? 0,
+      status: json['status'] as String? ?? 'pending',
+      lastError: json['lastError'] as String?,
     );
 
 Map<String, dynamic> _$SubmitQueueItemToJson(_SubmitQueueItem instance) =>
@@ -24,6 +26,8 @@ Map<String, dynamic> _$SubmitQueueItemToJson(_SubmitQueueItem instance) =>
       'payload': instance.payload,
       'createdAt': instance.createdAt.toIso8601String(),
       'attempts': instance.attempts,
+      'status': instance.status,
+      'lastError': instance.lastError,
     };
 
 // **************************************************************************

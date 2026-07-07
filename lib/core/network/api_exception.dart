@@ -12,6 +12,7 @@ class ApiException implements Exception {
   final Map<String, List<String>> fieldErrors;
 
   bool get isUnauthorized => statusCode == 401;
+  bool get isForbidden => statusCode == 403;
   bool get isValidationError => statusCode == 422 && fieldErrors.isNotEmpty;
 
   factory ApiException.fromDioException(DioException error) {

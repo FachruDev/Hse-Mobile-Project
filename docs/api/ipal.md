@@ -38,13 +38,14 @@ Catatan proses memiliki struktur:
 - `items[].input_type`: menentukan komponen input kondisi aktual.
 - `process.values[].note`: keterangan.
 
-Checklist harian memiliki struktur:
+Checklist harian memiliki struktur yang sama seperti web:
 
-- `items[].category`: kategori/perlengkapan.
-- `items[].name`: nama item pemeriksaan.
-- `items[].standard_condition`: kondisi standar.
-- `checklist.values[].status`: status aktual.
-- `checklist.values[].note`: catatan.
+- Perlengkapan: `items[].name`.
+- Kondisi Standar: `items[].standard_condition`.
+- Status: Ya/Tidak dengan default kosong/null. Kirim `OK` untuk Ya dan `NOT_OK` untuk Tidak.
+- Catatan: optional, kirim lewat `checklist.values[].note`.
+- Lampiran: foto optional, kirim lewat `checklist.values[].attachment`.
+- `items[].category`: kategori/perlengkapan untuk pengelompokan.
 
 Batch mixing memiliki struktur:
 
@@ -64,7 +65,7 @@ Mapping `input_type`:
 
 ## GET /ipal/logs
 
-Permission UI: `ipal.logs.view`.
+Permission backend/UI: `ipal.logs.view`.
 
 Riwayat log IPAL.
 
@@ -90,9 +91,9 @@ Response berupa pagination Laravel. Field penting per row:
 
 ## POST /ipal/logs
 
-Permission UI: `ipal.logs.create`.
+Permission backend/UI: `ipal.logs.create`.
 
-Membuat log IPAL harian.
+Membuat log IPAL harian. Gunakan `multipart/form-data` jika mengirim lampiran foto checklist.
 
 Request draft dengan checklist + proses:
 
@@ -106,12 +107,14 @@ Request draft dengan checklist + proses:
       {
         "item_id": 1,
         "status": "OK",
-        "note": null
+        "note": null,
+        "attachment": null
       },
       {
         "item_id": 2,
         "status": "NOT_OK",
-        "note": "Filter perlu dibersihkan"
+        "note": "Filter perlu dibersihkan",
+        "attachment": "@foto-checklist.jpg"
       }
     ]
   },
@@ -204,16 +207,17 @@ Catatan:
 - `action = DRAFT` menyimpan sebagai draft.
 - `action = SUBMIT` langsung menandatangani operator dan status proses menjadi `SUBMITTED`.
 - Untuk hari non-operasional, API akan mengisi checklist sebagai `NA` dan tidak bisa submit harian.
+- Lampiran checklist optional per item memakai field `checklist[values][0][attachment]`, `checklist[values][1][attachment]`, dan seterusnya saat multipart.
 
 ## GET /ipal/logs/{log}
 
-Permission UI: `ipal.logs.view`.
+Permission backend/UI: `ipal.logs.view`.
 
 Detail lengkap log IPAL, termasuk checklist, catatan proses, batch mixing, dan approval harian.
 
 ## POST /ipal/logs/{log}/submit
 
-Permission UI: `ipal.logs.submit`.
+Permission backend/UI: `ipal.logs.submit`.
 
 Submit catatan proses harian oleh operator.
 
@@ -232,7 +236,7 @@ Response:
 
 ## POST /ipal/logs/{log}/approve
 
-Permission UI: `ipal.logs.approve`.
+Permission backend/UI: `ipal.logs.approve`.
 
 Approve catatan proses harian oleh user supervisor/HSE yang berwenang.
 

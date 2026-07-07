@@ -22,11 +22,24 @@ class SubmitQueueService {
         .map(
           (item) => SubmitQueueItem.fromJson(Map<String, dynamic>.from(item)),
         )
+        .where((item) => item.status != SubmitQueueStatus.done.name)
         .toList(growable: false);
   }
 
   Future<void> markDone(String id) => _box.delete(id);
+
+  Future<void> markFailed(SubmitQueueItem item, String errorMessage) {
+    return enqueue(
+      item.copyWith(
+        status: SubmitQueueStatus.failed.name,
+        attempts: item.attempts + 1,
+        lastError: errorMessage,
+      ),
+    );
+  }
 }
+
+enum SubmitQueueStatus { pending, failed, done }
 
 @freezed
 abstract class SubmitQueueItem with _$SubmitQueueItem {
@@ -37,6 +50,8 @@ abstract class SubmitQueueItem with _$SubmitQueueItem {
     required Map<String, dynamic> payload,
     required DateTime createdAt,
     @Default(0) int attempts,
+    @Default('pending') String status,
+    String? lastError,
   }) = _SubmitQueueItem;
 
   factory SubmitQueueItem.fromJson(Map<String, dynamic> json) =>

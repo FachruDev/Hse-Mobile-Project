@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../color_config.dart';
+import '../../core/permissions/app_permissions.dart';
 import '../../features/auth/application/auth_session_controller.dart';
+import '../../features/auth/domain/entities/app_user.dart';
 import '../widgets/hse_brand_mark.dart';
 
 class HseAppDrawer extends ConsumerWidget {
@@ -58,30 +60,58 @@ class HseAppDrawer extends ConsumerWidget {
                     label: 'Dashboard',
                     onTap: () => _go(context, '/beranda'),
                   ),
-                  _DrawerItem(
-                    selected: selectedPath == '/form/ipal/proses',
-                    icon: Icons.fact_check_outlined,
-                    label: 'Catatan Proses IPAL',
-                    onTap: () => _go(context, '/form/ipal/proses'),
-                  ),
-                  _DrawerItem(
-                    selected: selectedPath == '/form/ipal/checklist',
-                    icon: Icons.checklist_outlined,
-                    label: 'Checklist Harian',
-                    onTap: () => _go(context, '/form/ipal/checklist'),
-                  ),
-                  _DrawerItem(
-                    selected: selectedPath == '/form/b3',
-                    icon: Icons.inventory_2_outlined,
-                    label: 'Penyimpanan Limbah B3',
-                    onTap: () => _go(context, '/form/b3'),
-                  ),
-                  _DrawerItem(
-                    selected: selectedPath == '/laporan/b3',
-                    icon: Icons.assignment_outlined,
-                    label: 'Laporan Bulanan B3',
-                    onTap: () => _go(context, '/laporan/b3'),
-                  ),
+                  if (user.hasAll([
+                    AppPermissions.masterProcessView,
+                    AppPermissions.masterBatchView,
+                    AppPermissions.ipalLogsCreate,
+                  ]))
+                    _DrawerItem(
+                      selected: selectedPath == '/form/ipal/proses',
+                      icon: Icons.fact_check_outlined,
+                      label: 'Catatan Proses IPAL',
+                      onTap: () => _go(context, '/form/ipal/proses'),
+                    ),
+                  if (user.hasAll([
+                    AppPermissions.masterChecklistView,
+                    AppPermissions.ipalLogsCreate,
+                  ]))
+                    _DrawerItem(
+                      selected: selectedPath == '/form/ipal/checklist',
+                      icon: Icons.checklist_outlined,
+                      label: 'Checklist Harian',
+                      onTap: () => _go(context, '/form/ipal/checklist'),
+                    ),
+                  if (user.hasAll([
+                    AppPermissions.b3StorageMasterView,
+                    AppPermissions.b3StorageLogsCreate,
+                  ]))
+                    _DrawerItem(
+                      selected: selectedPath == '/form/b3',
+                      icon: Icons.inventory_2_outlined,
+                      label: 'Penyimpanan Limbah B3',
+                      onTap: () => _go(context, '/form/b3'),
+                    ),
+                  if (user.hasAll([AppPermissions.ipalLogsView]))
+                    _DrawerItem(
+                      selected: selectedPath == '/riwayat/ipal',
+                      icon: Icons.history_outlined,
+                      label: 'Riwayat IPAL',
+                      onTap: () => _go(context, '/riwayat/ipal'),
+                    ),
+                  if (user.hasAll([AppPermissions.b3StorageLogsView]))
+                    _DrawerItem(
+                      selected: selectedPath == '/riwayat/b3',
+                      icon: Icons.receipt_long_outlined,
+                      label: 'Riwayat B3',
+                      onTap: () => _go(context, '/riwayat/b3'),
+                    ),
+                  if (user.hasAll([AppPermissions.b3StorageMonthlyReportView]))
+                    _DrawerItem(
+                      selected: selectedPath == '/laporan/b3',
+                      icon: Icons.assignment_outlined,
+                      label: 'Laporan Bulanan B3',
+                      onTap: () => _go(context, '/laporan/b3'),
+                    ),
                 ],
               ),
             ),
@@ -103,6 +133,13 @@ class HseAppDrawer extends ConsumerWidget {
   void _go(BuildContext context, String path) {
     Navigator.of(context).pop();
     context.go(path);
+  }
+}
+
+extension on AppUser? {
+  bool hasAll(Iterable<String> permissions) {
+    final user = this;
+    return user != null && user.canAll(permissions);
   }
 }
 

@@ -10,17 +10,19 @@ Endpoint master data untuk mobile hanya read-only. CRUD master data dikelola dar
 
 ## GET /master/checklist
 
-Permission UI: `master.checklist.view`.
+Permission backend/UI: `master.checklist.view`.
 
 Mengambil template dan item checklist pemeriksaan unit IPAL.
 
-Dipakai untuk Form 2: Checklist Pemeriksaan Harian. Field yang perlu ditampilkan:
+Dipakai untuk Form 2: Checklist Pemeriksaan Harian. Cara pengisiannya mengikuti web. Setiap baris checklist menampilkan:
 
-- `items[].category`: pengelompokan/perlengkapan proses.
-- `items[].name`: nama perlengkapan.
-- `items[].standard_condition`: kondisi standar.
-- Status input user: `OK`, `NOT_OK`, atau `NA`.
-- `note`: catatan optional saat submit.
+- Perlengkapan: `items[].name`.
+- Kondisi Standar: `items[].standard_condition`.
+- Status: pilihan Ya/Tidak, default kosong/null sampai user memilih.
+- Catatan: optional, dikirim sebagai `checklist.values[].note`.
+- Lampiran: foto optional per baris, dikirim sebagai `checklist.values[].attachment`.
+
+`items[].category` tetap dipakai untuk pengelompokan/perlengkapan proses.
 
 Response:
 
@@ -49,13 +51,13 @@ Response:
 
 Status checklist yang dikirim saat submit IPAL:
 
-- `OK`: Berfungsi
-- `NOT_OK`: Tidak Berfungsi
-- `NA`: Tidak Berlaku
+- `OK`: Ya
+- `NOT_OK`: Tidak
+- Kosong/null: belum dipilih, jangan dikirim saat submit final.
 
 ## GET /master/process
 
-Permission UI: `master.process.view` dan `master.batch.view`.
+Permission backend/UI: `master.process.view` dan `master.batch.view`.
 
 Mengambil template catatan proses dan item batch mixing.
 
@@ -153,13 +155,13 @@ Untuk semua tipe selain `number`, backend memvalidasi nilai lewat `value_text`.
 
 ### GET /b3-storage/master/waste-types
 
-Permission UI: `b3storage.master.view`.
+Permission backend/UI: `b3storage.master.view`.
 
 List jenis limbah aktif/nonaktif. Pakai `id` untuk `waste_type_id`.
 
 ### GET /b3-storage/master/initiator-departments
 
-Permission UI: `b3storage.master.view`.
+Permission backend/UI: `b3storage.master.view`.
 
 List dept inisiator aktif/nonaktif. Pakai `id` untuk `initiator_department_id`.
 
