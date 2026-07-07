@@ -16,6 +16,7 @@ import '../domain/entities/ipal_checklist_master.dart';
 import '../domain/entities/ipal_process_master.dart';
 import '../domain/services/ipal_checklist_payload_builder.dart';
 import '../domain/services/ipal_log_payload_builder.dart';
+import 'widgets/ipal_form_tabs.dart';
 
 class IpalChecklistFormScreen extends ConsumerStatefulWidget {
   const IpalChecklistFormScreen({super.key});
@@ -33,7 +34,6 @@ class _IpalChecklistFormScreenState
   final _attachmentPaths = <String, String>{};
   final _imagePicker = ImagePicker();
 
-  DateTime _selectedDate = DateTime.now();
   int? _selectedTemplateId;
   bool _draftLoaded = false;
   bool _saving = false;
@@ -45,7 +45,7 @@ class _IpalChecklistFormScreenState
     final templatesState = ref.watch(ipalChecklistTemplatesProvider);
 
     return HseAppScaffold(
-      title: 'Checklist Pemeriksaan Harian',
+      title: 'Form IPAL',
       selectedPath: '/form/ipal/checklist',
       showBackButton: true,
       body: templatesState.when(
@@ -67,21 +67,14 @@ class _IpalChecklistFormScreenState
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _HeaderCard(
-                dateLabel: _dateFormat.format(_selectedDate),
-                templates: templates,
-                selectedTemplateId: template.id,
-                onPickDate: _pickDate,
-                onTemplateChanged: (value) {
-                  if (value == null) return;
-                  setState(() {
-                    _selectedTemplateId = value;
-                    _fieldRevision++;
-                  });
-                },
-              ),
+              const IpalFormTabs(selected: IpalFormTab.checklist),
               const SizedBox(height: 16),
-              _ChecklistCompletionPanel(
+              _FormTitleCard(
+                title: 'Checklist Harian',
+                icon: Icons.checklist_outlined,
+              ),
+              const SizedBox(height: 12),
+              _ChecklistCompletionSummary(
                 items: activeItems,
                 statuses: _statuses,
               ),
@@ -131,7 +124,6 @@ class _IpalChecklistFormScreenState
     final templateExists = templates.any(
       (template) => template.id == draft.templateId,
     );
-    _selectedDate = DateTime.tryParse(draft.tanggal) ?? DateTime.now();
     _selectedTemplateId = templateExists
         ? draft.templateId
         : templates.firstOrNull?.id;
@@ -166,17 +158,6 @@ class _IpalChecklistFormScreenState
       grouped.putIfAbsent(item.category, () => []).add(item);
     }
     return grouped;
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
-    );
-    if (picked == null) return;
-    setState(() => _selectedDate = picked);
   }
 
   void _setStatus(int itemId, String value) {
@@ -245,7 +226,11 @@ class _IpalChecklistFormScreenState
       _showMessage('Draft Catatan Proses IPAL belum tersedia.');
       return;
     }
-    if (processDraft.tanggal != checklistDraft.tanggal) {
+    final normalizedProcessDraft = processDraft.copyWith(
+      tanggal: checklistDraft.tanggal,
+    );
+
+    if (normalizedProcessDraft.tanggal != checklistDraft.tanggal) {
       _showMessage(
         'Tanggal checklist dan catatan proses harus sama sebelum dikirim.',
       );
@@ -265,7 +250,7 @@ class _IpalChecklistFormScreenState
         checklistTemplate: checklistTemplate,
         checklistDraft: checklistDraft,
         processTemplate: processTemplate,
-        processDraft: processDraft,
+        processDraft: normalizedProcessDraft,
         batchSections: processMaster.effectiveBatchSections,
       );
 
@@ -309,7 +294,6 @@ class _IpalChecklistFormScreenState
       _statuses.clear();
       _notes.clear();
       _attachmentPaths.clear();
-      _selectedDate = DateTime.now();
       _fieldRevision++;
     });
     _showMessage('Draft checklist lokal dihapus.');
@@ -317,7 +301,7 @@ class _IpalChecklistFormScreenState
 
   IpalChecklistDraft _draftFor(IpalChecklistTemplate template) {
     return IpalChecklistDraft(
-      tanggal: _dateFormat.format(_selectedDate),
+      tanggal: _todayLabel,
       templateId: template.id,
       statuses: Map<String, String>.from(_statuses),
       notes: Map<String, String>.from(_notes),
@@ -349,56 +333,30 @@ class _IpalChecklistFormScreenState
           ),
         );
   }
+
+  String get _todayLabel => _dateFormat.format(DateTime.now());
 }
 
-class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({
-    required this.dateLabel,
-    required this.templates,
-    required this.selectedTemplateId,
-    required this.onPickDate,
-    required this.onTemplateChanged,
-  });
+class _FormTitleCard extends StatelessWidget {
+  const _FormTitleCard({required this.title, required this.icon});
 
-  final String dateLabel;
-  final List<IpalChecklistTemplate> templates;
-  final int selectedTemplateId;
-  final VoidCallback onPickDate;
-  final ValueChanged<int?> onTemplateChanged;
+  final String title;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              'Informasi Checklist',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              onPressed: onPickDate,
-              icon: const Icon(Icons.calendar_today_outlined),
-              label: Text('Tanggal: $dateLabel'),
-            ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<int>(
-              initialValue: selectedTemplateId,
-              decoration: const InputDecoration(
-                labelText: 'Template Checklist',
-                prefixIcon: Icon(Icons.view_list_outlined),
+            Icon(icon, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              items: [
-                for (final template in templates)
-                  DropdownMenuItem(
-                    value: template.id,
-                    child: Text(template.name),
-                  ),
-              ],
-              onChanged: onTemplateChanged,
             ),
           ],
         ),
@@ -407,8 +365,8 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
-class _ChecklistCompletionPanel extends StatelessWidget {
-  const _ChecklistCompletionPanel({
+class _ChecklistCompletionSummary extends StatelessWidget {
+  const _ChecklistCompletionSummary({
     required this.items,
     required this.statuses,
   });
@@ -418,71 +376,127 @@ class _ChecklistCompletionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final completed = items
+        .where((item) => (statuses[item.id.toString()] ?? '').isNotEmpty)
+        .length;
+    final total = items.length;
+    final missing = total - completed;
+    final progress = total == 0 ? 0.0 : completed / total;
+    final isComplete = total > 0 && missing == 0;
+    final color = isComplete ? Colors.green : Colors.red;
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showCompletionSheet(context),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: color.withValues(alpha: 0.12),
+                child: Icon(
+                  isComplete ? Icons.check_circle_outline : Icons.error_outline,
+                  color: color,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Kelengkapan Checklist',
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 6),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(999),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: Colors.red.withValues(alpha: 0.14),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.green,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '$completed/$total',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Text(
+                    missing == 0 ? 'Lengkap' : '$missing kosong',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: color),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 4),
+              const Icon(Icons.keyboard_arrow_up),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCompletionSheet(BuildContext context) {
     final completedItems = items
         .where((item) => (statuses[item.id.toString()] ?? '').isNotEmpty)
         .toList(growable: false);
     final missingItems = items
         .where((item) => (statuses[item.id.toString()] ?? '').isEmpty)
         .toList(growable: false);
-    final total = items.length;
-    final completed = completedItems.length;
-    final progress = total == 0 ? 0.0 : completed / total;
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.assignment_turned_in_outlined),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Laporan Kelengkapan Checklist',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Text(
-                  '$completed/$total',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(
-              value: progress,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(999),
-              backgroundColor: Colors.red.withValues(alpha: 0.16),
-              valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
-            ),
-            const SizedBox(height: 12),
-            _CompletionGroup(
-              title: 'Belum diisi',
-              color: Colors.red,
-              icon: Icons.error_outline,
-              items: missingItems,
-              emptyText: 'Semua item sudah diisi.',
-            ),
-            const SizedBox(height: 10),
-            _CompletionGroup(
-              title: 'Sudah diisi',
-              color: Colors.green,
-              icon: Icons.check_circle_outline,
-              items: completedItems,
-              emptyText: 'Belum ada item yang diisi.',
-            ),
-          ],
-        ),
-      ),
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            children: [
+              Text(
+                'Detail Kelengkapan',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              _CompletionList(
+                title: 'Belum diisi',
+                color: Colors.red,
+                icon: Icons.error_outline,
+                items: missingItems,
+                emptyText: 'Semua item sudah diisi.',
+              ),
+              const SizedBox(height: 14),
+              _CompletionList(
+                title: 'Sudah diisi',
+                color: Colors.green,
+                icon: Icons.check_circle_outline,
+                items: completedItems,
+                emptyText: 'Belum ada item yang diisi.',
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
-class _CompletionGroup extends StatelessWidget {
-  const _CompletionGroup({
+class _CompletionList extends StatelessWidget {
+  const _CompletionList({
     required this.title,
     required this.color,
     required this.icon,
@@ -498,13 +512,16 @@ class _CompletionGroup extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: color, size: 18),
-            const SizedBox(width: 6),
             Text(
               '$title (${items.length})',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
@@ -512,27 +529,20 @@ class _CompletionGroup extends StatelessWidget {
                 fontWeight: FontWeight.w700,
               ),
             ),
+            const SizedBox(height: 8),
+            if (items.isEmpty)
+              Text(emptyText, style: Theme.of(context).textTheme.bodySmall)
+            else
+              for (final item in items)
+                ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(icon, color: color),
+                  title: Text(item.name),
+                ),
           ],
         ),
-        const SizedBox(height: 8),
-        if (items.isEmpty)
-          Text(emptyText, style: Theme.of(context).textTheme.bodySmall)
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final item in items)
-                Chip(
-                  label: Text(item.name, overflow: TextOverflow.ellipsis),
-                  avatar: Icon(icon, color: color, size: 16),
-                  side: BorderSide(color: color.withValues(alpha: 0.35)),
-                  backgroundColor: color.withValues(alpha: 0.08),
-                  labelStyle: TextStyle(color: color),
-                ),
-            ],
-          ),
-      ],
+      ),
     );
   }
 }

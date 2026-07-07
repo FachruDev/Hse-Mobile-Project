@@ -10,6 +10,7 @@ import '../data/ipal_process_repository_impl.dart';
 import '../domain/entities/ipal_process_draft.dart';
 import '../domain/entities/ipal_process_master.dart';
 import '../domain/services/ipal_process_payload_builder.dart';
+import 'widgets/ipal_form_tabs.dart';
 
 class IpalProcessFormScreen extends ConsumerStatefulWidget {
   const IpalProcessFormScreen({super.key});
@@ -26,7 +27,6 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   final _processNotes = <String, String>{};
   final _batches = <IpalBatchDraft>[];
 
-  DateTime _selectedDate = DateTime.now();
   int? _selectedTemplateId;
   bool _draftLoaded = false;
   bool _saving = false;
@@ -37,7 +37,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     final masterState = ref.watch(ipalProcessMasterProvider);
 
     return HseAppScaffold(
-      title: 'Catatan Proses IPAL',
+      title: 'Form IPAL',
       selectedPath: '/form/ipal/proses',
       showBackButton: true,
       body: masterState.when(
@@ -58,19 +58,11 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                _HeaderCard(
-                  selectedDate: _selectedDate,
-                  dateLabel: _dateFormat.format(_selectedDate),
-                  templates: master.templates,
-                  selectedTemplateId: template.id,
-                  onPickDate: _pickDate,
-                  onTemplateChanged: (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _selectedTemplateId = value;
-                      _fieldRevision++;
-                    });
-                  },
+                const IpalFormTabs(selected: IpalFormTab.process),
+                const SizedBox(height: 16),
+                const _FormTitleCard(
+                  title: 'Catatan Proses IPAL',
+                  icon: Icons.fact_check_outlined,
                 ),
                 const SizedBox(height: 16),
                 const _SubmitNotice(),
@@ -124,7 +116,6 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     final templateExists = master.templates.any(
       (template) => template.id == draft.templateId,
     );
-    _selectedDate = DateTime.tryParse(draft.tanggal) ?? DateTime.now();
     _selectedTemplateId = templateExists
         ? draft.templateId
         : master.templates.firstOrNull?.id;
@@ -147,17 +138,6 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       (template) => template.id == selectedId,
       orElse: () => master.templates.first,
     );
-  }
-
-  Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
-    );
-    if (picked == null) return;
-    setState(() => _selectedDate = picked);
   }
 
   void _setProcessValue(int itemId, String value) {
@@ -243,7 +223,6 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       _processValues.clear();
       _processNotes.clear();
       _batches.clear();
-      _selectedDate = DateTime.now();
       _fieldRevision++;
     });
     if (!mounted) return;
@@ -254,79 +233,37 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
   IpalProcessDraft _draftFor(IpalProcessTemplate template) {
     return IpalProcessDraft(
-      tanggal: _dateFormat.format(_selectedDate),
+      tanggal: _todayLabel,
       templateId: template.id,
       processValues: Map<String, String>.from(_processValues),
       processNotes: Map<String, String>.from(_processNotes),
       batches: List<IpalBatchDraft>.from(_batches),
     );
   }
+
+  String get _todayLabel => _dateFormat.format(DateTime.now());
 }
 
-class _HeaderCard extends StatelessWidget {
-  const _HeaderCard({
-    required this.selectedDate,
-    required this.dateLabel,
-    required this.templates,
-    required this.selectedTemplateId,
-    required this.onPickDate,
-    required this.onTemplateChanged,
-  });
+class _FormTitleCard extends StatelessWidget {
+  const _FormTitleCard({required this.title, required this.icon});
 
-  final DateTime selectedDate;
-  final String dateLabel;
-  final List<IpalProcessTemplate> templates;
-  final int selectedTemplateId;
-  final VoidCallback onPickDate;
-  final ValueChanged<int?> onTemplateChanged;
+  final String title;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(
-              'Informasi Log',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton.icon(
-              onPressed: onPickDate,
-              icon: const Icon(Icons.calendar_today_outlined),
-              label: Text('Tanggal: $dateLabel'),
-            ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<int>(
-              initialValue: selectedTemplateId,
-              decoration: const InputDecoration(
-                labelText: 'Template Catatan Proses',
-                prefixIcon: Icon(Icons.view_list_outlined),
+            Icon(icon, color: AppColors.primary),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                title,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              selectedItemBuilder: (context) => [
-                for (final indexedTemplate in templates.indexed)
-                  Text(
-                    'Template ${indexedTemplate.$1 + 1}',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-              ],
-              items: [
-                for (final indexedTemplate in templates.indexed)
-                  DropdownMenuItem(
-                    value: indexedTemplate.$2.id,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 300),
-                      child: Text(
-                        'Template ${indexedTemplate.$1 + 1} - ${indexedTemplate.$2.name}',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ),
-              ],
-              onChanged: onTemplateChanged,
             ),
           ],
         ),
