@@ -20,6 +20,11 @@ _IpalProcessDraft _$IpalProcessDraftFromJson(Map<String, dynamic> json) =>
             (k, e) => MapEntry(k, e as String),
           ) ??
           const <String, String>{},
+      processAttachmentPaths:
+          (json['processAttachmentPaths'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+          ) ??
+          const <String, String>{},
       batches:
           (json['batches'] as List<dynamic>?)
               ?.map((e) => IpalBatchDraft.fromJson(e as Map<String, dynamic>))
@@ -33,6 +38,7 @@ Map<String, dynamic> _$IpalProcessDraftToJson(_IpalProcessDraft instance) =>
       'templateId': instance.templateId,
       'processValues': instance.processValues,
       'processNotes': instance.processNotes,
+      'processAttachmentPaths': instance.processAttachmentPaths,
       'batches': instance.batches,
     };
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../color_config.dart';
@@ -25,7 +26,9 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   final _dateFormat = DateFormat('yyyy-MM-dd');
   final _processValues = <String, String>{};
   final _processNotes = <String, String>{};
+  final _processAttachmentPaths = <String, String>{};
   final _batches = <IpalBatchDraft>[];
+  final _imagePicker = ImagePicker();
 
   int? _selectedTemplateId;
   bool _draftLoaded = false;
@@ -73,8 +76,11 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                     section: section,
                     values: _processValues,
                     notes: _processNotes,
+                    attachmentPaths: _processAttachmentPaths,
                     onValueChanged: _setProcessValue,
                     onNoteChanged: _setProcessNote,
+                    onPickAttachment: _pickProcessAttachment,
+                    onRemoveAttachment: _removeProcessAttachment,
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -125,6 +131,9 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     _processNotes
       ..clear()
       ..addAll(draft.processNotes);
+    _processAttachmentPaths
+      ..clear()
+      ..addAll(draft.processAttachmentPaths);
     _batches
       ..clear()
       ..addAll(draft.batches);
@@ -146,6 +155,27 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
   void _setProcessNote(int itemId, String value) {
     _processNotes[itemId.toString()] = value;
+  }
+
+  Future<void> _pickProcessAttachment(int itemId, ImageSource source) async {
+    final image = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 1600,
+    );
+    if (image == null) return;
+
+    setState(() {
+      _processAttachmentPaths[itemId.toString()] = image.path;
+      _fieldRevision++;
+    });
+  }
+
+  void _removeProcessAttachment(int itemId) {
+    setState(() {
+      _processAttachmentPaths.remove(itemId.toString());
+      _fieldRevision++;
+    });
   }
 
   void _addBatch() {
@@ -222,6 +252,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     setState(() {
       _processValues.clear();
       _processNotes.clear();
+      _processAttachmentPaths.clear();
       _batches.clear();
       _fieldRevision++;
     });
@@ -237,6 +268,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       templateId: template.id,
       processValues: Map<String, String>.from(_processValues),
       processNotes: Map<String, String>.from(_processNotes),
+      processAttachmentPaths: Map<String, String>.from(_processAttachmentPaths),
       batches: List<IpalBatchDraft>.from(_batches),
     );
   }
@@ -307,16 +339,22 @@ class _ProcessSectionCard extends StatelessWidget {
     required this.section,
     required this.values,
     required this.notes,
+    required this.attachmentPaths,
     required this.onValueChanged,
     required this.onNoteChanged,
+    required this.onPickAttachment,
+    required this.onRemoveAttachment,
     super.key,
   });
 
   final IpalProcessSection section;
   final Map<String, String> values;
   final Map<String, String> notes;
+  final Map<String, String> attachmentPaths;
   final void Function(int itemId, String value) onValueChanged;
   final void Function(int itemId, String value) onNoteChanged;
+  final Future<void> Function(int itemId, ImageSource source) onPickAttachment;
+  final void Function(int itemId) onRemoveAttachment;
 
   @override
   Widget build(BuildContext context) {
@@ -333,8 +371,14 @@ class _ProcessSectionCard extends StatelessWidget {
                 item: item,
                 value: values[item.id.toString()],
                 note: notes[item.id.toString()],
+                attachmentPath: attachmentPaths[item.id.toString()],
                 onValueChanged: (value) => onValueChanged(item.id, value),
                 onNoteChanged: (value) => onNoteChanged(item.id, value),
+                onPickGallery: () =>
+                    onPickAttachment(item.id, ImageSource.gallery),
+                onPickCamera: () =>
+                    onPickAttachment(item.id, ImageSource.camera),
+                onRemoveAttachment: () => onRemoveAttachment(item.id),
               ),
               const SizedBox(height: 14),
             ],
@@ -535,13 +579,21 @@ class _DynamicProcessField extends StatefulWidget {
     required this.note,
     required this.onValueChanged,
     required this.onNoteChanged,
+    this.attachmentPath,
+    this.onPickGallery,
+    this.onPickCamera,
+    this.onRemoveAttachment,
   });
 
   final IpalProcessItem item;
   final String? value;
   final String? note;
+  final String? attachmentPath;
   final ValueChanged<String> onValueChanged;
   final ValueChanged<String> onNoteChanged;
+  final VoidCallback? onPickGallery;
+  final VoidCallback? onPickCamera;
+  final VoidCallback? onRemoveAttachment;
 
   @override
   State<_DynamicProcessField> createState() => _DynamicProcessFieldState();
@@ -583,32 +635,55 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
   Widget build(BuildContext context) {
     final isNumber = widget.item.inputType == HseInputType.number;
     final isDropdown = _shouldRenderDropdown();
+    final canAttach =
+        widget.onPickGallery != null && widget.onPickCamera != null;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(widget.item.label, style: Theme.of(context).textTheme.titleMedium),
-        if (widget.item.standard?.isNotEmpty == true) ...[
-          const SizedBox(height: 8),
-          _StandardConditionBox(standard: widget.item.standard!),
-        ],
-        const SizedBox(height: 10),
-        if (isDropdown)
-          _buildDropdownField(context)
-        else
-          _buildTextField(isNumber),
-        const SizedBox(height: 8),
-        TextFormField(
-          initialValue: widget.note,
-          minLines: 1,
-          maxLines: 2,
-          decoration: const InputDecoration(
-            labelText: 'Catatan opsional',
-            prefixIcon: Icon(Icons.comment_outlined),
-          ),
-          onChanged: widget.onNoteChanged,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final useWideLayout = constraints.maxWidth >= 680;
+            final description = _ProcessDescription(
+              label: widget.item.label,
+              standard: widget.item.standard,
+            );
+            final inputs = _ProcessInputs(
+              actualField: isDropdown
+                  ? _buildDropdownField(context)
+                  : _buildTextField(isNumber),
+              note: widget.note,
+              onNoteChanged: widget.onNoteChanged,
+              attachmentPath: widget.attachmentPath,
+              canAttach: canAttach,
+              onPickGallery: widget.onPickGallery,
+              onPickCamera: widget.onPickCamera,
+              onRemoveAttachment: widget.onRemoveAttachment,
+            );
+
+            if (!useWideLayout) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [description, const SizedBox(height: 14), inputs],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: description),
+                const SizedBox(width: 16),
+                Expanded(flex: 2, child: inputs),
+              ],
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 
@@ -734,6 +809,124 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
   }
 }
 
+class _ProcessDescription extends StatelessWidget {
+  const _ProcessDescription({required this.label, required this.standard});
+
+  final String label;
+  final String? standard;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasStandard = standard?.isNotEmpty == true;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _FieldLabel(
+          icon: Icons.format_list_bulleted_outlined,
+          label: 'Uraian Proses',
+        ),
+        const SizedBox(height: 6),
+        Text(label, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 12),
+        const _FieldLabel(
+          icon: Icons.task_alt_outlined,
+          label: 'Kondisi Standar',
+        ),
+        const SizedBox(height: 6),
+        _StandardConditionBox(
+          standard: hasStandard ? standard! : 'Belum ada kondisi standar.',
+        ),
+      ],
+    );
+  }
+}
+
+class _ProcessInputs extends StatelessWidget {
+  const _ProcessInputs({
+    required this.actualField,
+    required this.note,
+    required this.onNoteChanged,
+    required this.attachmentPath,
+    required this.canAttach,
+    required this.onPickGallery,
+    required this.onPickCamera,
+    required this.onRemoveAttachment,
+  });
+
+  final Widget actualField;
+  final String? note;
+  final ValueChanged<String> onNoteChanged;
+  final String? attachmentPath;
+  final bool canAttach;
+  final VoidCallback? onPickGallery;
+  final VoidCallback? onPickCamera;
+  final VoidCallback? onRemoveAttachment;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _FieldLabel(
+          icon: Icons.fact_check_outlined,
+          label: 'Kondisi Aktual',
+        ),
+        const SizedBox(height: 8),
+        actualField,
+        const SizedBox(height: 12),
+        const _FieldLabel(icon: Icons.comment_outlined, label: 'Keterangan'),
+        const SizedBox(height: 8),
+        TextFormField(
+          initialValue: note,
+          minLines: 1,
+          maxLines: 2,
+          decoration: const InputDecoration(
+            labelText: 'Keterangan opsional',
+            prefixIcon: Icon(Icons.comment_outlined),
+          ),
+          onChanged: onNoteChanged,
+        ),
+        if (canAttach) ...[
+          const SizedBox(height: 12),
+          const _FieldLabel(icon: Icons.photo_camera_outlined, label: 'Foto'),
+          const SizedBox(height: 8),
+          _ProcessAttachmentPicker(
+            attachmentPath: attachmentPath,
+            onPickGallery: onPickGallery!,
+            onPickCamera: onPickCamera!,
+            onRemove: onRemoveAttachment!,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _FieldLabel extends StatelessWidget {
+  const _FieldLabel({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: AppColors.textSecondary),
+        const SizedBox(width: 6),
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _StandardConditionBox extends StatelessWidget {
   const _StandardConditionBox({required this.standard});
 
@@ -768,6 +961,82 @@ class _StandardConditionBox extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _ProcessAttachmentPicker extends StatelessWidget {
+  const _ProcessAttachmentPicker({
+    required this.attachmentPath,
+    required this.onPickGallery,
+    required this.onPickCamera,
+    required this.onRemove,
+  });
+
+  final String? attachmentPath;
+  final VoidCallback onPickGallery;
+  final VoidCallback onPickCamera;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final fileName = _fileName(attachmentPath);
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.attach_file_outlined, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    fileName ?? 'Foto opsional',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                if (fileName != null)
+                  IconButton(
+                    tooltip: 'Hapus foto',
+                    onPressed: onRemove,
+                    icon: const Icon(Icons.close),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: onPickGallery,
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('Galeri'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onPickCamera,
+                  icon: const Icon(Icons.photo_camera_outlined),
+                  label: const Text('Kamera'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String? _fileName(String? path) {
+    if (path == null || path.isEmpty) return null;
+
+    return path.split(RegExp(r'[\\/]')).last;
   }
 }
 

@@ -72,8 +72,13 @@ void main() {
       '${Directory.systemTemp.path}/checklist-${DateTime.now().microsecondsSinceEpoch}.jpg',
     );
     await tempFile.writeAsBytes([1, 2, 3]);
+    final processTempFile = File(
+      '${Directory.systemTemp.path}/process-${DateTime.now().microsecondsSinceEpoch}.jpg',
+    );
+    await processTempFile.writeAsBytes([4, 5, 6]);
     addTearDown(() {
       if (tempFile.existsSync()) tempFile.deleteSync();
+      if (processTempFile.existsSync()) processTempFile.deleteSync();
     });
 
     const checklistTemplate = IpalChecklistTemplate(
@@ -100,10 +105,11 @@ void main() {
         ),
       ],
     );
-    const processDraft = IpalProcessDraft(
+    final processDraft = IpalProcessDraft(
       tanggal: '2026-06-08',
       templateId: 2,
-      processValues: {'8': '7.1'},
+      processValues: const {'8': '7.1'},
+      processAttachmentPaths: {'8': processTempFile.path},
     );
 
     final payload = IpalLogPayloadBuilder.build(
@@ -124,6 +130,12 @@ void main() {
       ),
       isTrue,
     );
-    expect(formData.files.single.key, 'checklist[values][0][attachment]');
+    expect(
+      formData.files.map((file) => file.key),
+      containsAll([
+        'checklist[values][0][attachment]',
+        'process[values][0][attachment]',
+      ]),
+    );
   });
 }

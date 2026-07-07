@@ -10,6 +10,7 @@ abstract class IpalProcessDraft with _$IpalProcessDraft {
     required int templateId,
     @Default(<String, String>{}) Map<String, String> processValues,
     @Default(<String, String>{}) Map<String, String> processNotes,
+    @Default(<String, String>{}) Map<String, String> processAttachmentPaths,
     @Default(<IpalBatchDraft>[]) List<IpalBatchDraft> batches,
   }) = _IpalProcessDraft;
 

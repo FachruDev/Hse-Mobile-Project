@@ -33,6 +33,7 @@ void main() {
       templateId: 1,
       processValues: {'100': '7.2', '101': 'Normal'},
       processNotes: {'100': 'Stabil'},
+      processAttachmentPaths: {'100': 'C:/tmp/process.jpg'},
     );
 
     final payload = IpalProcessPayloadBuilder.buildProcessPayload(
@@ -44,8 +45,10 @@ void main() {
     expect(values[0]['value_number'], 7.2);
     expect(values[0]['value_text'], isNull);
     expect(values[0]['note'], 'Stabil');
+    expect(values[0]['attachment_path'], 'C:/tmp/process.jpg');
     expect(values[1]['value_number'], isNull);
     expect(values[1]['value_text'], 'Normal');
+    expect(values[1]['attachment_path'], isNull);
   });
 
   test('buildBatchPayload mempertahankan batch_no', () {

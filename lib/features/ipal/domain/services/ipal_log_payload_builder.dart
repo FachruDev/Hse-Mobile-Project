@@ -96,6 +96,16 @@ class IpalLogPayloadBuilder {
           ),
         )
         ..add(MapEntry('process[values][$index][note]', value['note'] ?? ''));
+
+      final attachmentPath = value['attachment_path']?.toString();
+      if (attachmentPath != null && attachmentPath.isNotEmpty) {
+        files.add(
+          MapEntry(
+            'process[values][$index][attachment]',
+            await MultipartFile.fromFile(attachmentPath),
+          ),
+        );
+      }
     }
 
     final batches = List<Map<String, dynamic>>.from(

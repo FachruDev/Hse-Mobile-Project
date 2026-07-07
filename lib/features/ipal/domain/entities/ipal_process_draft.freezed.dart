@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$IpalProcessDraft {
 
- String get tanggal; int get templateId; Map<String, String> get processValues; Map<String, String> get processNotes; List<IpalBatchDraft> get batches;
+ String get tanggal; int get templateId; Map<String, String> get processValues; Map<String, String> get processNotes; Map<String, String> get processAttachmentPaths; List<IpalBatchDraft> get batches;
 /// Create a copy of IpalProcessDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $IpalProcessDraftCopyWith<IpalProcessDraft> get copyWith => _$IpalProcessDraftCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessDraft&&(identical(other.tanggal, tanggal) || other.tanggal == tanggal)&&(identical(other.templateId, templateId) || other.templateId == templateId)&&const DeepCollectionEquality().equals(other.processValues, processValues)&&const DeepCollectionEquality().equals(other.processNotes, processNotes)&&const DeepCollectionEquality().equals(other.batches, batches));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is IpalProcessDraft&&(identical(other.tanggal, tanggal) || other.tanggal == tanggal)&&(identical(other.templateId, templateId) || other.templateId == templateId)&&const DeepCollectionEquality().equals(other.processValues, processValues)&&const DeepCollectionEquality().equals(other.processNotes, processNotes)&&const DeepCollectionEquality().equals(other.processAttachmentPaths, processAttachmentPaths)&&const DeepCollectionEquality().equals(other.batches, batches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,tanggal,templateId,const DeepCollectionEquality().hash(processValues),const DeepCollectionEquality().hash(processNotes),const DeepCollectionEquality().hash(batches));
+int get hashCode => Object.hash(runtimeType,tanggal,templateId,const DeepCollectionEquality().hash(processValues),const DeepCollectionEquality().hash(processNotes),const DeepCollectionEquality().hash(processAttachmentPaths),const DeepCollectionEquality().hash(batches));
 
 @override
 String toString() {
-  return 'IpalProcessDraft(tanggal: $tanggal, templateId: $templateId, processValues: $processValues, processNotes: $processNotes, batches: $batches)';
+  return 'IpalProcessDraft(tanggal: $tanggal, templateId: $templateId, processValues: $processValues, processNotes: $processNotes, processAttachmentPaths: $processAttachmentPaths, batches: $batches)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $IpalProcessDraftCopyWith<$Res>  {
   factory $IpalProcessDraftCopyWith(IpalProcessDraft value, $Res Function(IpalProcessDraft) _then) = _$IpalProcessDraftCopyWithImpl;
 @useResult
 $Res call({
- String tanggal, int templateId, Map<String, String> processValues, Map<String, String> processNotes, List<IpalBatchDraft> batches
+ String tanggal, int templateId, Map<String, String> processValues, Map<String, String> processNotes, Map<String, String> processAttachmentPaths, List<IpalBatchDraft> batches
 });
 
 
@@ -65,12 +65,13 @@ class _$IpalProcessDraftCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? tanggal = null,Object? templateId = null,Object? processValues = null,Object? processNotes = null,Object? batches = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? tanggal = null,Object? templateId = null,Object? processValues = null,Object? processNotes = null,Object? processAttachmentPaths = null,Object? batches = null,}) {
   return _then(_self.copyWith(
 tanggal: null == tanggal ? _self.tanggal : tanggal // ignore: cast_nullable_to_non_nullable
 as String,templateId: null == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
 as int,processValues: null == processValues ? _self.processValues : processValues // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,processNotes: null == processNotes ? _self.processNotes : processNotes // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,processAttachmentPaths: null == processAttachmentPaths ? _self.processAttachmentPaths : processAttachmentPaths // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,batches: null == batches ? _self.batches : batches // ignore: cast_nullable_to_non_nullable
 as List<IpalBatchDraft>,
   ));
@@ -157,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String tanggal,  int templateId,  Map<String, String> processValues,  Map<String, String> processNotes,  List<IpalBatchDraft> batches)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String tanggal,  int templateId,  Map<String, String> processValues,  Map<String, String> processNotes,  Map<String, String> processAttachmentPaths,  List<IpalBatchDraft> batches)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _IpalProcessDraft() when $default != null:
-return $default(_that.tanggal,_that.templateId,_that.processValues,_that.processNotes,_that.batches);case _:
+return $default(_that.tanggal,_that.templateId,_that.processValues,_that.processNotes,_that.processAttachmentPaths,_that.batches);case _:
   return orElse();
 
 }
@@ -178,10 +179,10 @@ return $default(_that.tanggal,_that.templateId,_that.processValues,_that.process
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String tanggal,  int templateId,  Map<String, String> processValues,  Map<String, String> processNotes,  List<IpalBatchDraft> batches)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String tanggal,  int templateId,  Map<String, String> processValues,  Map<String, String> processNotes,  Map<String, String> processAttachmentPaths,  List<IpalBatchDraft> batches)  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessDraft():
-return $default(_that.tanggal,_that.templateId,_that.processValues,_that.processNotes,_that.batches);case _:
+return $default(_that.tanggal,_that.templateId,_that.processValues,_that.processNotes,_that.processAttachmentPaths,_that.batches);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +199,10 @@ return $default(_that.tanggal,_that.templateId,_that.processValues,_that.process
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String tanggal,  int templateId,  Map<String, String> processValues,  Map<String, String> processNotes,  List<IpalBatchDraft> batches)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String tanggal,  int templateId,  Map<String, String> processValues,  Map<String, String> processNotes,  Map<String, String> processAttachmentPaths,  List<IpalBatchDraft> batches)?  $default,) {final _that = this;
 switch (_that) {
 case _IpalProcessDraft() when $default != null:
-return $default(_that.tanggal,_that.templateId,_that.processValues,_that.processNotes,_that.batches);case _:
+return $default(_that.tanggal,_that.templateId,_that.processValues,_that.processNotes,_that.processAttachmentPaths,_that.batches);case _:
   return null;
 
 }
@@ -213,7 +214,7 @@ return $default(_that.tanggal,_that.templateId,_that.processValues,_that.process
 @JsonSerializable()
 
 class _IpalProcessDraft implements IpalProcessDraft {
-  const _IpalProcessDraft({required this.tanggal, required this.templateId, final  Map<String, String> processValues = const <String, String>{}, final  Map<String, String> processNotes = const <String, String>{}, final  List<IpalBatchDraft> batches = const <IpalBatchDraft>[]}): _processValues = processValues,_processNotes = processNotes,_batches = batches;
+  const _IpalProcessDraft({required this.tanggal, required this.templateId, final  Map<String, String> processValues = const <String, String>{}, final  Map<String, String> processNotes = const <String, String>{}, final  Map<String, String> processAttachmentPaths = const <String, String>{}, final  List<IpalBatchDraft> batches = const <IpalBatchDraft>[]}): _processValues = processValues,_processNotes = processNotes,_processAttachmentPaths = processAttachmentPaths,_batches = batches;
   factory _IpalProcessDraft.fromJson(Map<String, dynamic> json) => _$IpalProcessDraftFromJson(json);
 
 @override final  String tanggal;
@@ -230,6 +231,13 @@ class _IpalProcessDraft implements IpalProcessDraft {
   if (_processNotes is EqualUnmodifiableMapView) return _processNotes;
   // ignore: implicit_dynamic_type
   return EqualUnmodifiableMapView(_processNotes);
+}
+
+ final  Map<String, String> _processAttachmentPaths;
+@override@JsonKey() Map<String, String> get processAttachmentPaths {
+  if (_processAttachmentPaths is EqualUnmodifiableMapView) return _processAttachmentPaths;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableMapView(_processAttachmentPaths);
 }
 
  final  List<IpalBatchDraft> _batches;
@@ -253,16 +261,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessDraft&&(identical(other.tanggal, tanggal) || other.tanggal == tanggal)&&(identical(other.templateId, templateId) || other.templateId == templateId)&&const DeepCollectionEquality().equals(other._processValues, _processValues)&&const DeepCollectionEquality().equals(other._processNotes, _processNotes)&&const DeepCollectionEquality().equals(other._batches, _batches));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _IpalProcessDraft&&(identical(other.tanggal, tanggal) || other.tanggal == tanggal)&&(identical(other.templateId, templateId) || other.templateId == templateId)&&const DeepCollectionEquality().equals(other._processValues, _processValues)&&const DeepCollectionEquality().equals(other._processNotes, _processNotes)&&const DeepCollectionEquality().equals(other._processAttachmentPaths, _processAttachmentPaths)&&const DeepCollectionEquality().equals(other._batches, _batches));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,tanggal,templateId,const DeepCollectionEquality().hash(_processValues),const DeepCollectionEquality().hash(_processNotes),const DeepCollectionEquality().hash(_batches));
+int get hashCode => Object.hash(runtimeType,tanggal,templateId,const DeepCollectionEquality().hash(_processValues),const DeepCollectionEquality().hash(_processNotes),const DeepCollectionEquality().hash(_processAttachmentPaths),const DeepCollectionEquality().hash(_batches));
 
 @override
 String toString() {
-  return 'IpalProcessDraft(tanggal: $tanggal, templateId: $templateId, processValues: $processValues, processNotes: $processNotes, batches: $batches)';
+  return 'IpalProcessDraft(tanggal: $tanggal, templateId: $templateId, processValues: $processValues, processNotes: $processNotes, processAttachmentPaths: $processAttachmentPaths, batches: $batches)';
 }
 
 
@@ -273,7 +281,7 @@ abstract mixin class _$IpalProcessDraftCopyWith<$Res> implements $IpalProcessDra
   factory _$IpalProcessDraftCopyWith(_IpalProcessDraft value, $Res Function(_IpalProcessDraft) _then) = __$IpalProcessDraftCopyWithImpl;
 @override @useResult
 $Res call({
- String tanggal, int templateId, Map<String, String> processValues, Map<String, String> processNotes, List<IpalBatchDraft> batches
+ String tanggal, int templateId, Map<String, String> processValues, Map<String, String> processNotes, Map<String, String> processAttachmentPaths, List<IpalBatchDraft> batches
 });
 
 
@@ -290,12 +298,13 @@ class __$IpalProcessDraftCopyWithImpl<$Res>
 
 /// Create a copy of IpalProcessDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? tanggal = null,Object? templateId = null,Object? processValues = null,Object? processNotes = null,Object? batches = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? tanggal = null,Object? templateId = null,Object? processValues = null,Object? processNotes = null,Object? processAttachmentPaths = null,Object? batches = null,}) {
   return _then(_IpalProcessDraft(
 tanggal: null == tanggal ? _self.tanggal : tanggal // ignore: cast_nullable_to_non_nullable
 as String,templateId: null == templateId ? _self.templateId : templateId // ignore: cast_nullable_to_non_nullable
 as int,processValues: null == processValues ? _self._processValues : processValues // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,processNotes: null == processNotes ? _self._processNotes : processNotes // ignore: cast_nullable_to_non_nullable
+as Map<String, String>,processAttachmentPaths: null == processAttachmentPaths ? _self._processAttachmentPaths : processAttachmentPaths // ignore: cast_nullable_to_non_nullable
 as Map<String, String>,batches: null == batches ? _self._batches : batches // ignore: cast_nullable_to_non_nullable
 as List<IpalBatchDraft>,
   ));
