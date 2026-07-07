@@ -17,12 +17,22 @@ void main() {
             IpalProcessItem(
               id: 100,
               label: 'pH',
-              inputType: HseInputType.number,
+              inputType: HseInputType.decimal2,
             ),
             IpalProcessItem(
               id: 101,
               label: 'Kondisi',
               inputType: HseInputType.text,
+            ),
+            IpalProcessItem(
+              id: 102,
+              label: 'Jumlah ikan',
+              inputType: HseInputType.integer,
+            ),
+            IpalProcessItem(
+              id: 103,
+              label: 'Kondisi visual',
+              inputType: HseInputType.option,
             ),
           ],
         ),
@@ -31,7 +41,12 @@ void main() {
     const draft = IpalProcessDraft(
       tanggal: '2026-06-08',
       templateId: 1,
-      processValues: {'100': '7.2', '101': 'Normal'},
+      processValues: {
+        '100': '7.2',
+        '101': 'Normal',
+        '102': '5',
+        '103': 'Standar',
+      },
       processNotes: {'100': 'Stabil'},
       processAttachmentPaths: {'100': 'C:/tmp/process.jpg'},
     );
@@ -49,6 +64,10 @@ void main() {
     expect(values[1]['value_number'], isNull);
     expect(values[1]['value_text'], 'Normal');
     expect(values[1]['attachment_path'], isNull);
+    expect(values[2]['value_number'], 5);
+    expect(values[2]['value_text'], isNull);
+    expect(values[3]['value_number'], isNull);
+    expect(values[3]['value_text'], 'Standar');
   });
 
   test('buildBatchPayload mempertahankan batch_no', () {
@@ -57,12 +76,17 @@ void main() {
         id: 1,
         name: 'Air limbah awal',
         items: [
-          IpalProcessItem(id: 1, label: 'pH', inputType: HseInputType.number),
+          IpalProcessItem(id: 1, label: 'pH', inputType: HseInputType.decimal2),
+          IpalProcessItem(
+            id: 2,
+            label: 'Durasi',
+            inputType: HseInputType.durationMinutes,
+          ),
         ],
       ),
     ];
     const batches = [
-      IpalBatchDraft(batchNo: 3, values: {'1': '6.8'}),
+      IpalBatchDraft(batchNo: 3, values: {'1': '6.8', '2': '15'}),
     ];
 
     final payload = IpalProcessPayloadBuilder.buildBatchPayload(
@@ -71,6 +95,8 @@ void main() {
     );
 
     expect(payload.single['batch_no'], 3);
-    expect((payload.single['values'] as List).single['value_number'], 6.8);
+    final values = payload.single['values'] as List<Map<String, dynamic>>;
+    expect(values[0]['value_number'], 6.8);
+    expect(values[1]['value_number'], 15);
   });
 }

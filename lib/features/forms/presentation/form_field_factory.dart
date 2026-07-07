@@ -13,13 +13,19 @@ class FormFieldFactory {
     required String controlName,
   }) {
     return switch (definition.inputType) {
-      HseInputType.number => AppTextInput(
+      HseInputType.number || HseInputType.decimal2 => AppTextInput(
         controlName: controlName,
         label: definition.label,
         helperText: definition.standard,
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
       ),
-      HseInputType.dropdown => AppDropdown(
+      HseInputType.integer || HseInputType.durationMinutes => AppTextInput(
+        controlName: controlName,
+        label: definition.label,
+        helperText: definition.standard,
+        keyboardType: TextInputType.number,
+      ),
+      HseInputType.dropdown || HseInputType.option => AppDropdown(
         controlName: controlName,
         label: definition.label,
         options: definition.options,

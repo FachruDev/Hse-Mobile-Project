@@ -6,6 +6,10 @@ part 'form_field_definition.g.dart';
 enum HseInputType {
   text,
   number,
+  option,
+  decimal2,
+  integer,
+  durationMinutes,
   dropdown,
   optionStandard,
   optionWithManual,
@@ -16,6 +20,10 @@ enum HseInputType {
   static HseInputType parse(String? value) {
     return switch (value?.toLowerCase().trim()) {
       'number' => HseInputType.number,
+      'option' => HseInputType.option,
+      'decimal_2' => HseInputType.decimal2,
+      'integer' => HseInputType.integer,
+      'duration_minutes' => HseInputType.durationMinutes,
       'dropdown' || 'select' => HseInputType.dropdown,
       'option_standard' => HseInputType.optionStandard,
       'option_with_manual' => HseInputType.optionWithManual,
@@ -29,6 +37,10 @@ enum HseInputType {
   String toApiValue() => switch (this) {
     HseInputType.text => 'text',
     HseInputType.number => 'number',
+    HseInputType.option => 'option',
+    HseInputType.decimal2 => 'decimal_2',
+    HseInputType.integer => 'integer',
+    HseInputType.durationMinutes => 'duration_minutes',
     HseInputType.dropdown => 'dropdown',
     HseInputType.optionStandard => 'option_standard',
     HseInputType.optionWithManual => 'option_with_manual',

@@ -51,7 +51,7 @@ class IpalProcessPayloadBuilder {
     final rawValue = values[item.id.toString()]?.trim();
     final note = notes[item.id.toString()]?.trim();
     final attachmentPath = attachmentPaths[item.id.toString()]?.trim();
-    final isNumber = item.inputType == HseInputType.number;
+    final isNumber = item.inputType.storesNumber;
 
     return {
       'item_id': item.id,
@@ -63,6 +63,18 @@ class IpalProcessPayloadBuilder {
       'attachment_path': attachmentPath?.isNotEmpty == true
           ? attachmentPath
           : null,
+    };
+  }
+}
+
+extension on HseInputType {
+  bool get storesNumber {
+    return switch (this) {
+      HseInputType.number ||
+      HseInputType.decimal2 ||
+      HseInputType.integer ||
+      HseInputType.durationMinutes => true,
+      _ => false,
     };
   }
 }

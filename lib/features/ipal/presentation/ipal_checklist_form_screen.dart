@@ -16,7 +16,9 @@ import '../domain/entities/ipal_checklist_master.dart';
 import '../domain/entities/ipal_process_master.dart';
 import '../domain/services/ipal_checklist_payload_builder.dart';
 import '../domain/services/ipal_log_payload_builder.dart';
+import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
+import 'widgets/ipal_value_toggle.dart';
 
 class IpalChecklistFormScreen extends ConsumerStatefulWidget {
   const IpalChecklistFormScreen({super.key});
@@ -33,12 +35,19 @@ class _IpalChecklistFormScreenState
   final _notes = <String, String>{};
   final _attachmentPaths = <String, String>{};
   final _imagePicker = ImagePicker();
+  final _scrollController = ScrollController();
 
   int? _selectedTemplateId;
   bool _draftLoaded = false;
   bool _saving = false;
   bool _submitting = false;
   int _fieldRevision = 0;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,46 +73,57 @@ class _IpalChecklistFormScreenState
               .toList(growable: false);
           final groupedItems = _groupItems(activeItems);
 
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return Stack(
             children: [
-              const IpalFormTabs(selected: IpalFormTab.checklist),
-              const SizedBox(height: 16),
-              _FormTitleCard(
-                title: 'Checklist Harian',
-                icon: Icons.checklist_outlined,
-              ),
-              const SizedBox(height: 12),
-              _ChecklistCompletionSummary(
-                items: activeItems,
-                statuses: _statuses,
-              ),
-              const SizedBox(height: 16),
-              for (final entry in groupedItems.entries) ...[
-                _ChecklistCategoryCard(
-                  key: ValueKey('${entry.key}_$_fieldRevision'),
-                  category: entry.key,
-                  items: entry.value,
-                  statuses: _statuses,
-                  notes: _notes,
-                  attachmentPaths: _attachmentPaths,
-                  onStatusChanged: _setStatus,
-                  onNoteChanged: _setNote,
-                  onPickAttachment: _pickAttachment,
-                  onRemoveAttachment: _removeAttachment,
+              ListView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
                 ),
-                const SizedBox(height: 12),
-              ],
-              const SizedBox(height: 8),
-              _ActionBar(
-                saving: _saving,
-                submitting: _submitting,
-                onSaveDraft: () => _saveDraft(template),
-                onSendDraft: () => _sendIpalLog(template, 'DRAFT'),
-                onSubmit: () => _sendIpalLog(template, 'SUBMIT'),
-                onReset: _resetDraft,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const IpalFormTabs(selected: IpalFormTab.checklist),
+                  const SizedBox(height: 16),
+                  _FormTitleCard(
+                    title: 'Checklist Harian',
+                    icon: Icons.checklist_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  _ChecklistCompletionSummary(
+                    items: activeItems,
+                    statuses: _statuses,
+                  ),
+                  const SizedBox(height: 16),
+                  for (final entry in groupedItems.entries) ...[
+                    _ChecklistCategoryCard(
+                      key: ValueKey('${entry.key}_$_fieldRevision'),
+                      category: entry.key,
+                      items: entry.value,
+                      statuses: _statuses,
+                      notes: _notes,
+                      attachmentPaths: _attachmentPaths,
+                      onStatusChanged: _setStatus,
+                      onNoteChanged: _setNote,
+                      onPickAttachment: _pickAttachment,
+                      onRemoveAttachment: _removeAttachment,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  const SizedBox(height: 8),
+                  _ActionBar(
+                    saving: _saving,
+                    submitting: _submitting,
+                    onSaveDraft: () => _saveDraft(template),
+                    onSendDraft: () => _sendIpalLog(template, 'DRAFT'),
+                    onSubmit: () => _sendIpalLog(template, 'SUBMIT'),
+                    onReset: _resetDraft,
+                  ),
+                  const SizedBox(height: 96),
+                ],
               ),
-              const SizedBox(height: 24),
+              IpalFloatingScrollControls(controller: _scrollController),
             ],
           );
         },
@@ -681,20 +701,7 @@ class _ChecklistItemField extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              initialValue: status?.isEmpty == true ? null : status,
-              decoration: const InputDecoration(
-                labelText: 'Status aktual',
-                prefixIcon: Icon(Icons.fact_check_outlined),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'OK', child: Text('Ya')),
-                DropdownMenuItem(value: 'NOT_OK', child: Text('Tidak')),
-              ],
-              onChanged: (value) {
-                if (value != null) onStatusChanged(value);
-              },
-            ),
+            _ChecklistStatusToggle(value: status, onChanged: onStatusChanged),
             const SizedBox(height: 10),
             TextFormField(
               initialValue: note,
@@ -716,6 +723,35 @@ class _ChecklistItemField extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ChecklistStatusToggle extends StatelessWidget {
+  const _ChecklistStatusToggle({required this.value, required this.onChanged});
+
+  final String? value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return IpalValueToggle(
+      value: value,
+      options: const [
+        IpalToggleOption(
+          value: 'OK',
+          label: 'Ya',
+          icon: Icons.check,
+          color: Colors.green,
+        ),
+        IpalToggleOption(
+          value: 'NOT_OK',
+          label: 'Tidak',
+          icon: Icons.close,
+          color: Colors.red,
+        ),
+      ],
+      onChanged: onChanged,
     );
   }
 }
