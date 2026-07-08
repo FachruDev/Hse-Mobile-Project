@@ -14,6 +14,7 @@ import '../domain/entities/ipal_process_master.dart';
 import '../domain/services/ipal_process_payload_builder.dart';
 import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
+import 'widgets/ipal_today_log_guard.dart';
 import 'widgets/ipal_value_toggle.dart';
 
 class IpalProcessFormScreen extends ConsumerStatefulWidget {
@@ -53,87 +54,91 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       title: 'Form IPAL',
       selectedPath: '/form/ipal/proses',
       showBackButton: true,
-      body: masterState.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stackTrace) => _ErrorState(
-          message: 'Master catatan proses belum bisa dimuat: $error',
-          onRetry: () => ref.invalidate(ipalProcessMasterProvider),
-        ),
-        data: (master) {
-          _loadDraftOnce(master);
+      body: IpalTodayLogGuard(
+        child: masterState.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stackTrace) => _ErrorState(
+            message: 'Master catatan proses belum bisa dimuat: $error',
+            onRetry: () => ref.invalidate(ipalProcessMasterProvider),
+          ),
+          data: (master) {
+            _loadDraftOnce(master);
 
-          final template = _selectedTemplate(master);
-          if (template == null) return const _EmptyMasterState();
-          final batchSections = master.effectiveBatchSections;
+            final template = _selectedTemplate(master);
+            if (template == null) return const _EmptyMasterState();
+            final batchSections = master.effectiveBatchSections;
 
-          return Form(
-            key: _formKey,
-            child: Stack(
-              children: [
-                ListView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    const IpalFormTabs(selected: IpalFormTab.process),
-                    const SizedBox(height: 16),
-                    const _FormTitleCard(
-                      title: 'Catatan Proses IPAL',
-                      icon: Icons.fact_check_outlined,
+            return Form(
+              key: _formKey,
+              child: Stack(
+                children: [
+                  ListView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
                     ),
-                    const SizedBox(height: 12),
-                    _ProcessCompletionSummary(
-                      template: template,
-                      processValues: _processValues,
-                      batchSections: batchSections,
-                      batches: _batches,
-                    ),
-                    const SizedBox(height: 16),
-                    const _SubmitNotice(),
-                    const SizedBox(height: 16),
-                    for (final section in template.sections) ...[
-                      _ProcessSectionCard(
-                        key: ValueKey('section_${section.id}_$_fieldRevision'),
-                        section: section,
-                        values: _processValues,
-                        notes: _processNotes,
-                        attachmentPaths: _processAttachmentPaths,
-                        onValueChanged: _setProcessValue,
-                        onNoteChanged: _setProcessNote,
-                        onPickAttachment: _pickProcessAttachment,
-                        onRemoveAttachment: _removeProcessAttachment,
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.all(16),
+                    children: [
+                      const IpalFormTabs(selected: IpalFormTab.process),
+                      const SizedBox(height: 16),
+                      const _FormTitleCard(
+                        title: 'Catatan Proses IPAL',
+                        icon: Icons.fact_check_outlined,
                       ),
                       const SizedBox(height: 12),
+                      _ProcessCompletionSummary(
+                        template: template,
+                        processValues: _processValues,
+                        batchSections: batchSections,
+                        batches: _batches,
+                      ),
+                      const SizedBox(height: 16),
+                      const _SubmitNotice(),
+                      const SizedBox(height: 16),
+                      for (final section in template.sections) ...[
+                        _ProcessSectionCard(
+                          key: ValueKey(
+                            'section_${section.id}_$_fieldRevision',
+                          ),
+                          section: section,
+                          values: _processValues,
+                          notes: _processNotes,
+                          attachmentPaths: _processAttachmentPaths,
+                          onValueChanged: _setProcessValue,
+                          onNoteChanged: _setProcessNote,
+                          onPickAttachment: _pickProcessAttachment,
+                          onRemoveAttachment: _removeProcessAttachment,
+                        ),
+                        const SizedBox(height: 12),
+                      ],
+                      _BatchMixingCard(
+                        key: ValueKey('batch_$_fieldRevision'),
+                        batchSections: batchSections,
+                        batches: _batches,
+                        onAddBatch: _addBatch,
+                        onRemoveBatch: _removeBatch,
+                        onValueChanged: _setBatchValue,
+                        onNoteChanged: _setBatchNote,
+                      ),
+                      const SizedBox(height: 20),
+                      _ActionBar(
+                        saving: _saving,
+                        onSaveDraft: () => _saveDraft(template),
+                        onValidate: () =>
+                            _validatePayload(template, batchSections),
+                        onReset: _resetDraft,
+                      ),
+                      const SizedBox(height: 96),
                     ],
-                    _BatchMixingCard(
-                      key: ValueKey('batch_$_fieldRevision'),
-                      batchSections: batchSections,
-                      batches: _batches,
-                      onAddBatch: _addBatch,
-                      onRemoveBatch: _removeBatch,
-                      onValueChanged: _setBatchValue,
-                      onNoteChanged: _setBatchNote,
-                    ),
-                    const SizedBox(height: 20),
-                    _ActionBar(
-                      saving: _saving,
-                      onSaveDraft: () => _saveDraft(template),
-                      onValidate: () =>
-                          _validatePayload(template, batchSections),
-                      onReset: _resetDraft,
-                    ),
-                    const SizedBox(height: 96),
-                  ],
-                ),
-                IpalFloatingScrollControls(controller: _scrollController),
-              ],
-            ),
-          );
-        },
+                  ),
+                  IpalFloatingScrollControls(controller: _scrollController),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -206,13 +211,15 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       _processAttachmentPaths[itemId.toString()] = image.path;
       _fieldRevision++;
     });
+    await _saveCurrentDraftSilently();
   }
 
-  void _removeProcessAttachment(int itemId) {
+  Future<void> _removeProcessAttachment(int itemId) async {
     setState(() {
       _processAttachmentPaths.remove(itemId.toString());
       _fieldRevision++;
     });
+    await _saveCurrentDraftSilently();
   }
 
   void _addBatch() {
@@ -318,6 +325,16 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   }
 
   String get _todayLabel => _dateFormat.format(DateTime.now());
+
+  Future<void> _saveCurrentDraftSilently() async {
+    final master = ref.read(ipalProcessMasterProvider).value;
+    if (master == null) return;
+    final template = _selectedTemplate(master);
+    if (template == null) return;
+    await ref
+        .read(ipalProcessRepositoryProvider)
+        .saveDraft(_draftFor(template));
+  }
 }
 
 class _FormTitleCard extends StatelessWidget {

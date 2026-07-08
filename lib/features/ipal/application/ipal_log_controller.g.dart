@@ -166,3 +166,44 @@ final class IpalLogDetailFamily extends $Family
   @override
   String toString() => r'ipalLogDetailProvider';
 }
+
+@ProviderFor(ipalTodayLog)
+final ipalTodayLogProvider = IpalTodayLogProvider._();
+
+final class IpalTodayLogProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, dynamic>?>,
+          Map<String, dynamic>?,
+          FutureOr<Map<String, dynamic>?>
+        >
+    with
+        $FutureModifier<Map<String, dynamic>?>,
+        $FutureProvider<Map<String, dynamic>?> {
+  IpalTodayLogProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ipalTodayLogProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ipalTodayLogHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, dynamic>?> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, dynamic>?> create(Ref ref) {
+    return ipalTodayLog(ref);
+  }
+}
+
+String _$ipalTodayLogHash() => r'7d1ccd3c118f4d1a20731698c5fdc1749d94b46f';
