@@ -14,6 +14,7 @@ class AppPermissions {
 
   static const b3StorageMasterView = 'b3storage.master.view';
   static const b3StorageLogsCreate = 'b3storage.logs.create';
+  static const b3StorageLogsSelectUser = 'b3storage.logs.select-user';
   static const b3StorageLogsView = 'b3storage.logs.view';
   static const b3StorageLogsUpdate = 'b3storage.logs.update';
   static const b3StorageLogsDelete = 'b3storage.logs.delete';
