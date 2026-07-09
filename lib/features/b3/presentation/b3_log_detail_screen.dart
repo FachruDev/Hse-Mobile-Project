@@ -10,6 +10,7 @@ import '../../../shared/pdf/hse_pdf_builders.dart';
 import '../../../shared/pdf/hse_pdf_exporter.dart';
 import '../../../shared/utils/api_response_parser.dart';
 import '../../../shared/utils/hse_datetime_formatter.dart';
+import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../../auth/application/auth_session_controller.dart';
 import '../application/b3_storage_log_controller.dart';
 import '../data/b3_storage_repository.dart';
@@ -79,10 +80,22 @@ class B3LogDetailScreen extends ConsumerWidget {
     Map<String, dynamic> data,
   ) async {
     try {
-      await HsePdfExporter.preview(
+      final result = await HsePdfExporter.preview(
         fileName: 'penyimpanan-limbah-b3-log-$logId.pdf',
-        build: (logoBytes) =>
-            HsePdfBuilders.b3LogDetail(data, logoBytes: logoBytes),
+        build: (assets) => HsePdfBuilders.b3LogDetail(
+          data,
+          logoBytes: assets.logoBytes,
+          regularFontBytes: assets.regularFontBytes,
+          boldFontBytes: assets.boldFontBytes,
+        ),
+      );
+      if (!context.mounted || !result.savedByFallback) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Preview PDF belum aktif. File disimpan sementara di ${result.savedPath}. Tutup lalu buka ulang aplikasi setelah rebuild agar preview aktif.',
+          ),
+        ),
       );
     } catch (error) {
       if (!context.mounted) return;
@@ -96,24 +109,14 @@ class B3LogDetailScreen extends ConsumerWidget {
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showHseConfirmDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Hapus Log B3'),
-        content: const Text('Log yang dihapus tidak bisa dikembalikan.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Batal'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Hapus'),
-          ),
-        ],
-      ),
+      title: 'Hapus Log B3',
+      message: 'Log yang dihapus tidak bisa dikembalikan. Lanjutkan?',
+      confirmLabel: 'Hapus',
+      destructive: true,
     );
-    if (confirmed != true) return;
+    if (!confirmed || !context.mounted) return;
 
     try {
       await ref.read(b3StorageRepositoryProvider).deleteLog(logId);

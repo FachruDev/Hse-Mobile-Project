@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../color_config.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
+import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../../forms/domain/entities/form_field_definition.dart';
 import '../application/ipal_process_master_controller.dart';
 import '../data/ipal_process_repository_impl.dart';
@@ -128,7 +129,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                         onSaveDraft: () => _saveDraft(template),
                         onValidate: () =>
                             _validatePayload(template, batchSections),
-                        onReset: _resetDraft,
+                        onReset: _confirmResetDraft,
                       ),
                       const SizedBox(height: 96),
                     ],
@@ -311,6 +312,19 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Draft lokal dihapus.')));
+  }
+
+  Future<void> _confirmResetDraft() async {
+    final confirmed = await showHseConfirmDialog(
+      context: context,
+      title: 'Reset Draft Catatan Proses',
+      message: 'Draft catatan proses dan batch mixing lokal akan dihapus.',
+      confirmLabel: 'Reset',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    await _resetDraft();
   }
 
   IpalProcessDraft _draftFor(IpalProcessTemplate template) {

@@ -6,6 +6,7 @@ import '../../../color_config.dart';
 import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../../shared/navigation/mobile_menu.dart';
+import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../../auth/application/auth_session_controller.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../b3/data/b3_storage_repository.dart';
@@ -145,6 +146,15 @@ class _QuickStatusGrid extends ConsumerWidget {
               icon: const Icon(Icons.sync),
               label: const Text('Kirim Ulang Antrean'),
               onPressed: () async {
+                final confirmed = await showHseConfirmDialog(
+                  context: context,
+                  title: 'Kirim Ulang Antrean',
+                  message:
+                      'Semua antrean submit akan dicoba dikirim ulang. Lanjutkan?',
+                  confirmLabel: 'Kirim Ulang',
+                );
+                if (!confirmed || !context.mounted) return;
+
                 final messenger = ScaffoldMessenger.of(context);
                 final count = await ref
                     .read(submitQueueProcessorProvider)

@@ -7,6 +7,7 @@ import '../../../color_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
+import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../application/b3_master_controller.dart';
 import '../data/b3_storage_repository.dart';
 import '../domain/entities/b3_master_data.dart';
@@ -113,8 +114,8 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
                   saving: _saving,
                   submitting: _submitting,
                   onSaveDraft: _saveDraft,
-                  onSubmit: _submit,
-                  onReset: _resetDraft,
+                  onSubmit: _confirmSubmit,
+                  onReset: _confirmResetDraft,
                 ),
                 const SizedBox(height: 24),
               ],
@@ -230,6 +231,18 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
     }
   }
 
+  Future<void> _confirmSubmit() async {
+    final confirmed = await showHseConfirmDialog(
+      context: context,
+      title: 'Submit Log B3',
+      message: 'Log penyimpanan limbah B3 akan dikirim ke server. Lanjutkan?',
+      confirmLabel: 'Submit',
+    );
+    if (!confirmed || !mounted) return;
+
+    await _submit();
+  }
+
   Future<void> _resetDraft() async {
     await ref.read(b3StorageRepositoryProvider).clearDraft();
     setState(() {
@@ -246,6 +259,19 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
       _noteController.clear();
     });
     _showMessage('Draft B3 lokal dihapus.');
+  }
+
+  Future<void> _confirmResetDraft() async {
+    final confirmed = await showHseConfirmDialog(
+      context: context,
+      title: 'Reset Draft B3',
+      message: 'Draft B3 lokal akan dihapus dari perangkat ini.',
+      confirmLabel: 'Reset',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    await _resetDraft();
   }
 
   B3StorageDraft _draft() {

@@ -9,6 +9,7 @@ import '../../../shared/pdf/hse_pdf_builders.dart';
 import '../../../shared/pdf/hse_pdf_exporter.dart';
 import '../../../shared/utils/api_response_parser.dart';
 import '../../../shared/utils/hse_datetime_formatter.dart';
+import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../../auth/application/auth_session_controller.dart';
 import '../application/ipal_log_controller.dart';
 import '../data/ipal_log_repository.dart';
@@ -56,6 +57,10 @@ class IpalLogDetailScreen extends ConsumerWidget {
                       ref,
                       () =>
                           ref.read(ipalLogRepositoryProvider).submitLog(logId),
+                      confirmTitle: 'Submit Log IPAL',
+                      confirmMessage:
+                          'Log akan dikirim untuk approval. Lanjutkan?',
+                      confirmLabel: 'Submit',
                     ),
                   ),
                 if (user?.hasPermission(AppPermissions.ipalLogsApprove) ??
@@ -71,6 +76,10 @@ class IpalLogDetailScreen extends ConsumerWidget {
                         () => ref
                             .read(ipalLogRepositoryProvider)
                             .approveLog(logId),
+                        confirmTitle: 'Approve Log IPAL',
+                        confirmMessage:
+                            'Log akan disetujui sebagai data final harian. Lanjutkan?',
+                        confirmLabel: 'Approve',
                       ),
                     ),
                   ),
@@ -94,10 +103,22 @@ class IpalLogDetailScreen extends ConsumerWidget {
     Map<String, dynamic> data,
   ) async {
     try {
-      await HsePdfExporter.preview(
+      final result = await HsePdfExporter.preview(
         fileName: 'catatan-ipal-harian-$logId.pdf',
-        build: (logoBytes) =>
-            HsePdfBuilders.ipalDailyDetail(data, logoBytes: logoBytes),
+        build: (assets) => HsePdfBuilders.ipalDailyDetail(
+          data,
+          logoBytes: assets.logoBytes,
+          regularFontBytes: assets.regularFontBytes,
+          boldFontBytes: assets.boldFontBytes,
+        ),
+      );
+      if (!context.mounted || !result.savedByFallback) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Preview PDF belum aktif. File disimpan sementara di ${result.savedPath}. Tutup lalu buka ulang aplikasi setelah rebuild agar preview aktif.',
+          ),
+        ),
       );
     } catch (error) {
       if (!context.mounted) return;
@@ -113,8 +134,19 @@ class IpalLogDetailScreen extends ConsumerWidget {
   Future<void> _runAction(
     BuildContext context,
     WidgetRef ref,
-    Future<Map<String, dynamic>> Function() action,
-  ) async {
+    Future<Map<String, dynamic>> Function() action, {
+    required String confirmTitle,
+    required String confirmMessage,
+    required String confirmLabel,
+  }) async {
+    final confirmed = await showHseConfirmDialog(
+      context: context,
+      title: confirmTitle,
+      message: confirmMessage,
+      confirmLabel: confirmLabel,
+    );
+    if (!confirmed || !context.mounted) return;
+
     try {
       final response = await action();
       if (!context.mounted) return;

@@ -7,6 +7,7 @@ import '../../../color_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
+import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../application/ipal_checklist_master_controller.dart';
 import '../application/ipal_log_controller.dart';
 import '../data/ipal_checklist_repository_impl.dart';
@@ -119,9 +120,9 @@ class _IpalChecklistFormScreenState
                       saving: _saving,
                       submitting: _submitting,
                       onSaveDraft: () => _saveDraft(template),
-                      onSendDraft: () => _sendIpalLog(template, 'DRAFT'),
-                      onSubmit: () => _sendIpalLog(template, 'SUBMIT'),
-                      onReset: _resetDraft,
+                      onSendDraft: () => _confirmSendIpalLog(template, 'DRAFT'),
+                      onSubmit: () => _confirmSendIpalLog(template, 'SUBMIT'),
+                      onReset: _confirmResetDraft,
                     ),
                     const SizedBox(height: 96),
                   ],
@@ -313,6 +314,24 @@ class _IpalChecklistFormScreenState
     }
   }
 
+  Future<void> _confirmSendIpalLog(
+    IpalChecklistTemplate checklistTemplate,
+    String action,
+  ) async {
+    final isSubmit = action == 'SUBMIT';
+    final confirmed = await showHseConfirmDialog(
+      context: context,
+      title: isSubmit ? 'Submit Log IPAL' : 'Kirim Draft IPAL',
+      message: isSubmit
+          ? 'Log IPAL akan dikirim untuk approval. Lanjutkan?'
+          : 'Draft IPAL akan dikirim ke server. Lanjutkan?',
+      confirmLabel: isSubmit ? 'Submit' : 'Kirim Draft',
+    );
+    if (!confirmed || !mounted) return;
+
+    await _sendIpalLog(checklistTemplate, action);
+  }
+
   Future<void> _resetDraft() async {
     await ref.read(ipalChecklistRepositoryProvider).clearDraft();
     setState(() {
@@ -322,6 +341,19 @@ class _IpalChecklistFormScreenState
       _fieldRevision++;
     });
     _showMessage('Draft checklist lokal dihapus.');
+  }
+
+  Future<void> _confirmResetDraft() async {
+    final confirmed = await showHseConfirmDialog(
+      context: context,
+      title: 'Reset Draft Checklist',
+      message: 'Draft checklist lokal akan dihapus dari perangkat ini.',
+      confirmLabel: 'Reset',
+      destructive: true,
+    );
+    if (!confirmed || !mounted) return;
+
+    await _resetDraft();
   }
 
   IpalChecklistDraft _draftFor(IpalChecklistTemplate template) {

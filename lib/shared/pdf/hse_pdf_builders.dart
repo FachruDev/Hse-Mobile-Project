@@ -12,15 +12,21 @@ class HsePdfBuilders {
   static Future<Uint8List> ipalDailyDetail(
     Map<String, dynamic> data, {
     Uint8List? logoBytes,
+    Uint8List? regularFontBytes,
+    Uint8List? boldFontBytes,
   }) async {
     final document = pw.Document();
     final logo = _logo(logoBytes);
+    final pageTheme = _pageTheme(
+      regularFontBytes: regularFontBytes,
+      boldFontBytes: boldFontBytes,
+    );
     final processLog = _map(pathValue(data, ['process_log']));
     final status = textValue(processLog['status'], fallback: 'DRAFT');
 
     document.addPage(
       pw.MultiPage(
-        pageTheme: _pageTheme,
+        pageTheme: pageTheme,
         build: (context) => [
           _header(
             logo: logo,
@@ -60,9 +66,15 @@ class HsePdfBuilders {
   static Future<Uint8List> b3LogDetail(
     Map<String, dynamic> data, {
     Uint8List? logoBytes,
+    Uint8List? regularFontBytes,
+    Uint8List? boldFontBytes,
   }) async {
     final document = pw.Document();
     final logo = _logo(logoBytes);
+    final pageTheme = _pageTheme(
+      regularFontBytes: regularFontBytes,
+      boldFontBytes: boldFontBytes,
+    );
     final wasteName = textValue(
       pathValue(data, ['waste_type', 'name']),
       fallback: textValue(data['waste_type_other']),
@@ -82,7 +94,7 @@ class HsePdfBuilders {
 
     document.addPage(
       pw.MultiPage(
-        pageTheme: _pageTheme,
+        pageTheme: pageTheme,
         build: (context) => [
           _header(
             logo: logo,
@@ -120,10 +132,24 @@ class HsePdfBuilders {
     return document.save();
   }
 
-  static pw.PageTheme get _pageTheme => pw.PageTheme(
-    margin: const pw.EdgeInsets.all(28),
-    theme: pw.ThemeData.withFont(),
-  );
+  static pw.PageTheme _pageTheme({
+    required Uint8List? regularFontBytes,
+    required Uint8List? boldFontBytes,
+  }) {
+    final regularFont = regularFontBytes == null
+        ? null
+        : pw.Font.ttf(ByteData.sublistView(regularFontBytes));
+    final boldFont = boldFontBytes == null
+        ? null
+        : pw.Font.ttf(ByteData.sublistView(boldFontBytes));
+
+    return pw.PageTheme(
+      margin: const pw.EdgeInsets.all(28),
+      theme: regularFont == null
+          ? pw.ThemeData.base()
+          : pw.ThemeData.withFont(base: regularFont, bold: boldFont),
+    );
+  }
 
   static pw.MemoryImage? _logo(Uint8List? logoBytes) {
     if (logoBytes == null || logoBytes.isEmpty) return null;
