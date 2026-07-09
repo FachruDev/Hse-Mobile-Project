@@ -27,18 +27,28 @@ class IpalChecklistRepositoryImpl implements IpalChecklistRepository {
 
   @override
   Future<List<IpalChecklistTemplate>> getChecklistTemplates() async {
+    final freshCached = _readCachedTemplates();
+    if (freshCached.isNotEmpty && _masterCache.isFresh(_masterCacheKey)) {
+      return freshCached;
+    }
+
     try {
       final templates = await _remoteDataSource.getChecklistTemplates();
-      await _masterCache.writeJson(
+      await _masterCache.writeFreshJson(
         _masterCacheKey,
         templates.map((template) => template.toJson()).toList(growable: false),
       );
       return templates;
     } catch (_) {
-      final cached = _masterCache.readJsonList(_masterCacheKey);
+      final cached = _readCachedTemplates();
       if (cached.isEmpty) rethrow;
-      return cached.map(IpalChecklistTemplate.fromJson).toList(growable: false);
+      return cached;
     }
+  }
+
+  List<IpalChecklistTemplate> _readCachedTemplates() {
+    final cached = _masterCache.readJsonList(_masterCacheKey);
+    return cached.map(IpalChecklistTemplate.fromJson).toList(growable: false);
   }
 
   @override

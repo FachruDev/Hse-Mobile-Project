@@ -113,7 +113,7 @@ void main() {
     );
 
     final payload = IpalLogPayloadBuilder.build(
-      action: 'DRAFT',
+      action: 'SUBMIT',
       checklistTemplate: checklistTemplate,
       checklistDraft: checklistDraft,
       processTemplate: processTemplate,

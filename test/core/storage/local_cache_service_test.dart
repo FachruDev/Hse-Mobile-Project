@@ -64,6 +64,33 @@ void main() {
     expect(processValues['1'], '7.1');
     expect(values['2'], 'Normal');
   });
+
+  test('writeFreshJson menandai cache fresh sampai TTL habis', () async {
+    final box = _MemoryBox();
+    final cache = LocalCacheService(box);
+
+    await cache.writeFreshJson('session', {'name': 'Operator'});
+
+    expect(cache.isFresh('session'), isTrue);
+
+    box.seed(
+      'session:cached_at',
+      DateTime.now().subtract(const Duration(minutes: 11)).toIso8601String(),
+    );
+
+    expect(cache.isFresh('session'), isFalse);
+  });
+
+  test('remove menghapus data dan timestamp cache', () async {
+    final box = _MemoryBox();
+    final cache = LocalCacheService(box);
+
+    await cache.writeFreshJson('session', {'name': 'Operator'});
+    await cache.remove('session');
+
+    expect(cache.readJsonMap('session'), isNull);
+    expect(cache.isFresh('session'), isFalse);
+  });
 }
 
 class _MemoryBox extends Fake implements Box<dynamic> {
@@ -76,6 +103,11 @@ class _MemoryBox extends Fake implements Box<dynamic> {
   @override
   Future<void> put(dynamic key, dynamic value) async {
     _values[key] = value;
+  }
+
+  @override
+  Future<void> delete(dynamic key) async {
+    _values.remove(key);
   }
 
   @override

@@ -5,13 +5,21 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../color_config.dart';
+import '../../../core/network/api_exception.dart';
+import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../../forms/domain/entities/form_field_definition.dart';
+import '../application/ipal_log_controller.dart';
 import '../application/ipal_process_master_controller.dart';
+import '../data/ipal_checklist_repository_impl.dart';
+import '../data/ipal_log_repository.dart';
 import '../data/ipal_process_repository_impl.dart';
+import '../domain/entities/ipal_checklist_master.dart';
 import '../domain/entities/ipal_process_draft.dart';
 import '../domain/entities/ipal_process_master.dart';
+import '../domain/services/ipal_checklist_payload_builder.dart';
+import '../domain/services/ipal_log_payload_builder.dart';
 import '../domain/services/ipal_process_payload_builder.dart';
 import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
@@ -39,6 +47,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   int? _selectedTemplateId;
   bool _draftLoaded = false;
   bool _saving = false;
+  bool _submitting = false;
   int _fieldRevision = 0;
 
   @override
@@ -71,16 +80,94 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
             return Form(
               key: _formKey,
-              child: Stack(
+              child: _buildResponsiveForm(
+                template: template,
+                batchSections: batchSections,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildResponsiveForm({
+    required IpalProcessTemplate template,
+    required List<IpalProcessSection> batchSections,
+  }) {
+    final summary = _ProcessCompletionSummary(
+      template: template,
+      processValues: _processValues,
+      batchSections: batchSections,
+      batches: _batches,
+    );
+    final actions = _ActionBar(
+      saving: _saving,
+      submitting: _submitting,
+      onSaveDraft: () => _saveDraft(template),
+      onSubmit: () => _confirmSubmitLog(template, batchSections),
+      onValidate: () => _validatePayload(template, batchSections),
+      onReset: _confirmResetDraft,
+    );
+    final batchCard = _BatchMixingCard(
+      key: ValueKey('batch_$_fieldRevision'),
+      batchSections: batchSections,
+      batches: _batches,
+      onAddBatch: _addBatch,
+      onRemoveBatch: _removeBatch,
+      onValueChanged: _setBatchValue,
+      onNoteChanged: _setBatchNote,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useWideLayout = constraints.maxWidth >= 900;
+        final useTwoColumns = constraints.maxWidth >= 1320;
+
+        if (!useWideLayout) {
+          return Stack(
+            children: [
+              ListView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(16),
                 children: [
-                  ListView(
-                    controller: _scrollController,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
-                    ),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.all(16),
+                  const IpalFormTabs(selected: IpalFormTab.process),
+                  const SizedBox(height: 16),
+                  const _FormTitleCard(
+                    title: 'Catatan Proses IPAL',
+                    icon: Icons.fact_check_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  summary,
+                  const SizedBox(height: 16),
+                  const _SubmitNotice(),
+                  const SizedBox(height: 16),
+                  ..._processSectionCards(template.sections),
+                  batchCard,
+                  const SizedBox(height: 20),
+                  actions,
+                  const SizedBox(height: 96),
+                ],
+              ),
+              IpalFloatingScrollControls(controller: _scrollController),
+            ],
+          );
+        }
+
+        return Stack(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: 340,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
                     children: [
                       const IpalFormTabs(selected: IpalFormTab.process),
                       const SizedBox(height: 16),
@@ -89,21 +176,29 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                         icon: Icons.fact_check_outlined,
                       ),
                       const SizedBox(height: 12),
-                      _ProcessCompletionSummary(
-                        template: template,
-                        processValues: _processValues,
-                        batchSections: batchSections,
-                        batches: _batches,
-                      ),
+                      summary,
                       const SizedBox(height: 16),
                       const _SubmitNotice(),
                       const SizedBox(height: 16),
-                      for (final section in template.sections) ...[
-                        _ProcessSectionCard(
-                          key: ValueKey(
-                            'section_${section.id}_$_fieldRevision',
-                          ),
-                          section: section,
+                      actions,
+                    ],
+                  ),
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: ListView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                    children: [
+                      if (useTwoColumns)
+                        _ProcessTwoColumnGrid(
+                          sections: template.sections,
+                          fieldRevision: _fieldRevision,
                           values: _processValues,
                           notes: _processNotes,
                           attachmentPaths: _processAttachmentPaths,
@@ -111,37 +206,39 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                           onNoteChanged: _setProcessNote,
                           onPickAttachment: _pickProcessAttachment,
                           onRemoveAttachment: _removeProcessAttachment,
-                        ),
-                        const SizedBox(height: 12),
-                      ],
-                      _BatchMixingCard(
-                        key: ValueKey('batch_$_fieldRevision'),
-                        batchSections: batchSections,
-                        batches: _batches,
-                        onAddBatch: _addBatch,
-                        onRemoveBatch: _removeBatch,
-                        onValueChanged: _setBatchValue,
-                        onNoteChanged: _setBatchNote,
-                      ),
-                      const SizedBox(height: 20),
-                      _ActionBar(
-                        saving: _saving,
-                        onSaveDraft: () => _saveDraft(template),
-                        onValidate: () =>
-                            _validatePayload(template, batchSections),
-                        onReset: _confirmResetDraft,
-                      ),
-                      const SizedBox(height: 96),
+                        )
+                      else
+                        ..._processSectionCards(template.sections),
+                      batchCard,
                     ],
                   ),
-                  IpalFloatingScrollControls(controller: _scrollController),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
+                ),
+              ],
+            ),
+            IpalFloatingScrollControls(controller: _scrollController),
+          ],
+        );
+      },
     );
+  }
+
+  List<Widget> _processSectionCards(List<IpalProcessSection> sections) {
+    return [
+      for (final section in sections) ...[
+        _ProcessSectionCard(
+          key: ValueKey('section_${section.id}_$_fieldRevision'),
+          section: section,
+          values: _processValues,
+          notes: _processNotes,
+          attachmentPaths: _processAttachmentPaths,
+          onValueChanged: _setProcessValue,
+          onNoteChanged: _setProcessNote,
+          onPickAttachment: _pickProcessAttachment,
+          onRemoveAttachment: _removeProcessAttachment,
+        ),
+        const SizedBox(height: 12),
+      ],
+    ];
   }
 
   void _loadDraftOnce(IpalProcessMaster master) {
@@ -277,6 +374,133 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     );
   }
 
+  Future<void> _confirmSubmitLog(
+    IpalProcessTemplate processTemplate,
+    List<IpalProcessSection> batchSections,
+  ) async {
+    final confirmed = await showHseConfirmDialog(
+      context: context,
+      title: 'Submit Log IPAL',
+      message:
+          'Log IPAL akan dikirim sebagai data final harian dan ditandatangani operator. Lanjutkan?',
+      confirmLabel: 'Submit',
+    );
+    if (!confirmed || !mounted) return;
+
+    await _submitLog(processTemplate, batchSections);
+  }
+
+  Future<void> _submitLog(
+    IpalProcessTemplate processTemplate,
+    List<IpalProcessSection> batchSections,
+  ) async {
+    final isValid = _formKey.currentState?.validate() ?? false;
+    if (!isValid) return;
+
+    final checklistRepository = ref.read(ipalChecklistRepositoryProvider);
+    final checklistDraft = checklistRepository.readDraft();
+    if (checklistDraft == null) {
+      _showMessage('Draft Checklist Harian belum tersedia.');
+      return;
+    }
+
+    final checklistTemplates = await checklistRepository
+        .getChecklistTemplates();
+    final checklistTemplate = _selectedChecklistTemplate(
+      checklistTemplates,
+      checklistDraft.templateId,
+    );
+    if (checklistTemplate == null) {
+      _showMessage('Template Checklist Harian belum tersedia.');
+      return;
+    }
+
+    final missingChecklist = IpalChecklistPayloadBuilder.missingStatuses(
+      template: checklistTemplate,
+      draft: checklistDraft,
+    );
+    if (missingChecklist.isNotEmpty) {
+      _showMessage('Masih ada item checklist yang belum diisi.');
+      return;
+    }
+
+    final processDraft = _draftFor(
+      processTemplate,
+    ).copyWith(tanggal: checklistDraft.tanggal);
+    final processPayload = IpalProcessPayloadBuilder.buildProcessPayload(
+      template: processTemplate,
+      draft: processDraft,
+    );
+    final missingProcess = processTemplate.sections
+        .expand((section) => section.items)
+        .where((item) {
+          final key = item.id.toString();
+          return (processDraft.processValues[key] ?? '').trim().isEmpty;
+        })
+        .toList(growable: false);
+    if (missingProcess.isNotEmpty || processPayload.isEmpty) {
+      _showMessage('Masih ada catatan proses yang belum diisi.');
+      return;
+    }
+    final batchItems = batchSections
+        .expand((section) => section.items)
+        .toList(growable: false);
+    final hasIncompleteBatch =
+        _batches.isNotEmpty &&
+        batchItems.any((item) {
+          final key = item.id.toString();
+          return _batches.any(
+            (batch) => (batch.values[key] ?? '').trim().isEmpty,
+          );
+        });
+    if (hasIncompleteBatch) {
+      _showMessage('Masih ada nilai batch mixing yang belum diisi.');
+      return;
+    }
+
+    setState(() => _submitting = true);
+    final payload = IpalLogPayloadBuilder.build(
+      action: 'SUBMIT',
+      checklistTemplate: checklistTemplate,
+      checklistDraft: checklistDraft,
+      processTemplate: processTemplate,
+      processDraft: processDraft,
+      batchSections: batchSections,
+    );
+
+    try {
+      await ref.read(ipalLogRepositoryProvider).createLog(payload);
+      await checklistRepository.clearDraft();
+      await ref.read(ipalProcessRepositoryProvider).clearDraft();
+      ref.invalidate(ipalTodayLogProvider);
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _processValues.clear();
+        _processNotes.clear();
+        _processAttachmentPaths.clear();
+        _batches.clear();
+        _fieldRevision++;
+      });
+      _showMessage('Log IPAL berhasil di-submit.');
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      if (_canQueue(error)) {
+        await _enqueueIpalLog(payload);
+        _showMessage(
+          'Server belum bisa dijangkau. Log IPAL masuk antrean auto-sync.',
+        );
+        return;
+      }
+      _showMessage(error.message);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      _showMessage('Log IPAL gagal dikirim: $error');
+    }
+  }
+
   void _validatePayload(
     IpalProcessTemplate template,
     List<IpalProcessSection> batchSections,
@@ -312,6 +536,42 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Draft lokal dihapus.')));
+  }
+
+  void _showMessage(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  bool _canQueue(ApiException error) {
+    final statusCode = error.statusCode;
+    return statusCode == null || statusCode >= 500;
+  }
+
+  Future<void> _enqueueIpalLog(Map<String, dynamic> payload) {
+    return ref
+        .read(submitQueueServiceProvider)
+        .enqueue(
+          SubmitQueueItem(
+            id: 'ipal-${DateTime.now().microsecondsSinceEpoch}',
+            endpoint: '/ipal/logs',
+            method: 'POST',
+            payload: payload,
+            createdAt: DateTime.now(),
+          ),
+        );
+  }
+
+  IpalChecklistTemplate? _selectedChecklistTemplate(
+    List<IpalChecklistTemplate> templates,
+    int templateId,
+  ) {
+    if (templates.isEmpty) return null;
+    return templates.firstWhere(
+      (template) => template.id == templateId,
+      orElse: () => templates.first,
+    );
   }
 
   Future<void> _confirmResetDraft() async {
@@ -633,6 +893,70 @@ class _SubmitNotice extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ProcessTwoColumnGrid extends StatelessWidget {
+  const _ProcessTwoColumnGrid({
+    required this.sections,
+    required this.fieldRevision,
+    required this.values,
+    required this.notes,
+    required this.attachmentPaths,
+    required this.onValueChanged,
+    required this.onNoteChanged,
+    required this.onPickAttachment,
+    required this.onRemoveAttachment,
+  });
+
+  final List<IpalProcessSection> sections;
+  final int fieldRevision;
+  final Map<String, String> values;
+  final Map<String, String> notes;
+  final Map<String, String> attachmentPaths;
+  final void Function(int itemId, String value) onValueChanged;
+  final void Function(int itemId, String value) onNoteChanged;
+  final Future<void> Function(int itemId, ImageSource source) onPickAttachment;
+  final void Function(int itemId) onRemoveAttachment;
+
+  @override
+  Widget build(BuildContext context) {
+    final columns = [<IpalProcessSection>[], <IpalProcessSection>[]];
+    for (var index = 0; index < sections.length; index++) {
+      columns[index.isEven ? 0 : 1].add(sections[index]);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var columnIndex = 0; columnIndex < columns.length; columnIndex++)
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: columnIndex == 0 ? 0 : 12),
+              child: Column(
+                children: [
+                  for (final section in columns[columnIndex]) ...[
+                    _ProcessSectionCard(
+                      key: ValueKey(
+                        'wide_section_${section.id}_$fieldRevision',
+                      ),
+                      section: section,
+                      values: values,
+                      notes: notes,
+                      attachmentPaths: attachmentPaths,
+                      onValueChanged: onValueChanged,
+                      onNoteChanged: onNoteChanged,
+                      onPickAttachment: onPickAttachment,
+                      onRemoveAttachment: onRemoveAttachment,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -1445,13 +1769,17 @@ class _ProcessAttachmentPicker extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.saving,
+    required this.submitting,
     required this.onSaveDraft,
+    required this.onSubmit,
     required this.onValidate,
     required this.onReset,
   });
 
   final bool saving;
+  final bool submitting;
   final VoidCallback onSaveDraft;
+  final VoidCallback onSubmit;
   final VoidCallback onValidate;
   final VoidCallback onReset;
 
@@ -1471,14 +1799,25 @@ class _ActionBar extends StatelessWidget {
           label: const Text('Simpan Draft Lokal'),
         ),
         const SizedBox(height: 10),
+        FilledButton.icon(
+          onPressed: saving || submitting ? null : onSubmit,
+          icon: submitting
+              ? const SizedBox.square(
+                  dimension: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.send_outlined),
+          label: const Text('Submit Log IPAL'),
+        ),
+        const SizedBox(height: 10),
         OutlinedButton.icon(
-          onPressed: onValidate,
+          onPressed: saving || submitting ? null : onValidate,
           icon: const Icon(Icons.rule_outlined),
           label: const Text('Validasi Catatan Proses'),
         ),
         const SizedBox(height: 10),
         TextButton.icon(
-          onPressed: onReset,
+          onPressed: saving || submitting ? null : onReset,
           icon: const Icon(Icons.refresh),
           label: const Text('Reset Draft'),
         ),

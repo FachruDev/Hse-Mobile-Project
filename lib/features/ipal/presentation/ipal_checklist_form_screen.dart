@@ -4,20 +4,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../color_config.dart';
-import '../../../core/network/api_exception.dart';
-import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../application/ipal_checklist_master_controller.dart';
-import '../application/ipal_log_controller.dart';
 import '../data/ipal_checklist_repository_impl.dart';
-import '../data/ipal_log_repository.dart';
-import '../data/ipal_process_repository_impl.dart';
 import '../domain/entities/ipal_checklist_draft.dart';
 import '../domain/entities/ipal_checklist_master.dart';
-import '../domain/entities/ipal_process_master.dart';
-import '../domain/services/ipal_checklist_payload_builder.dart';
-import '../domain/services/ipal_log_payload_builder.dart';
 import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
 import 'widgets/ipal_today_log_guard.dart';
@@ -43,7 +35,6 @@ class _IpalChecklistFormScreenState
   int? _selectedTemplateId;
   bool _draftLoaded = false;
   bool _saving = false;
-  bool _submitting = false;
   int _fieldRevision = 0;
 
   @override
@@ -77,63 +68,149 @@ class _IpalChecklistFormScreenState
                 .toList(growable: false);
             final groupedItems = _groupItems(activeItems);
 
-            return Stack(
-              children: [
-                ListView(
-                  controller: _scrollController,
-                  physics: const BouncingScrollPhysics(
-                    parent: AlwaysScrollableScrollPhysics(),
-                  ),
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    const IpalFormTabs(selected: IpalFormTab.checklist),
-                    const SizedBox(height: 16),
-                    _FormTitleCard(
-                      title: 'Checklist Harian',
-                      icon: Icons.checklist_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    _ChecklistCompletionSummary(
-                      items: activeItems,
-                      statuses: _statuses,
-                    ),
-                    const SizedBox(height: 16),
-                    for (final entry in groupedItems.entries) ...[
-                      _ChecklistCategoryCard(
-                        key: ValueKey('${entry.key}_$_fieldRevision'),
-                        category: entry.key,
-                        items: entry.value,
-                        statuses: _statuses,
-                        notes: _notes,
-                        attachmentPaths: _attachmentPaths,
-                        onStatusChanged: _setStatus,
-                        onNoteChanged: _setNote,
-                        onPickAttachment: _pickAttachment,
-                        onRemoveAttachment: _removeAttachment,
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    const SizedBox(height: 8),
-                    _ActionBar(
-                      saving: _saving,
-                      submitting: _submitting,
-                      onSaveDraft: () => _saveDraft(template),
-                      onSendDraft: () => _confirmSendIpalLog(template, 'DRAFT'),
-                      onSubmit: () => _confirmSendIpalLog(template, 'SUBMIT'),
-                      onReset: _confirmResetDraft,
-                    ),
-                    const SizedBox(height: 96),
-                  ],
-                ),
-                IpalFloatingScrollControls(controller: _scrollController),
-              ],
+            return _buildResponsiveForm(
+              template: template,
+              activeItems: activeItems,
+              groupedItems: groupedItems,
             );
           },
         ),
       ),
     );
+  }
+
+  Widget _buildResponsiveForm({
+    required IpalChecklistTemplate template,
+    required List<IpalChecklistItem> activeItems,
+    required Map<String, List<IpalChecklistItem>> groupedItems,
+  }) {
+    final summary = _ChecklistCompletionSummary(
+      items: activeItems,
+      statuses: _statuses,
+    );
+    final actions = _ActionBar(
+      saving: _saving,
+      onSaveDraft: () => _saveDraft(template),
+      onReset: _confirmResetDraft,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final useWideLayout = constraints.maxWidth >= 900;
+        final useTwoColumns = constraints.maxWidth >= 1180;
+
+        if (!useWideLayout) {
+          return Stack(
+            children: [
+              ListView(
+                controller: _scrollController,
+                physics: const BouncingScrollPhysics(
+                  parent: AlwaysScrollableScrollPhysics(),
+                ),
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const IpalFormTabs(selected: IpalFormTab.checklist),
+                  const SizedBox(height: 16),
+                  const _FormTitleCard(
+                    title: 'Checklist Harian',
+                    icon: Icons.checklist_outlined,
+                  ),
+                  const SizedBox(height: 12),
+                  summary,
+                  const SizedBox(height: 16),
+                  ..._checklistCards(groupedItems),
+                  const SizedBox(height: 8),
+                  actions,
+                  const SizedBox(height: 96),
+                ],
+              ),
+              IpalFloatingScrollControls(controller: _scrollController),
+            ],
+          );
+        }
+
+        return Stack(
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(
+                  width: 330,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+                    children: [
+                      const IpalFormTabs(selected: IpalFormTab.checklist),
+                      const SizedBox(height: 16),
+                      const _FormTitleCard(
+                        title: 'Checklist Harian',
+                        icon: Icons.checklist_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      summary,
+                      const SizedBox(height: 16),
+                      actions,
+                    ],
+                  ),
+                ),
+                const VerticalDivider(width: 1),
+                Expanded(
+                  child: ListView(
+                    controller: _scrollController,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    keyboardDismissBehavior:
+                        ScrollViewKeyboardDismissBehavior.onDrag,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+                    children: [
+                      if (useTwoColumns)
+                        _ChecklistTwoColumnGrid(
+                          entries: groupedItems.entries.toList(growable: false),
+                          fieldRevision: _fieldRevision,
+                          statuses: _statuses,
+                          notes: _notes,
+                          attachmentPaths: _attachmentPaths,
+                          onStatusChanged: _setStatus,
+                          onNoteChanged: _setNote,
+                          onPickAttachment: _pickAttachment,
+                          onRemoveAttachment: _removeAttachment,
+                        )
+                      else
+                        ..._checklistCards(groupedItems),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            IpalFloatingScrollControls(controller: _scrollController),
+          ],
+        );
+      },
+    );
+  }
+
+  List<Widget> _checklistCards(
+    Map<String, List<IpalChecklistItem>> groupedItems,
+  ) {
+    return [
+      for (final entry in groupedItems.entries) ...[
+        _ChecklistCategoryCard(
+          key: ValueKey('${entry.key}_$_fieldRevision'),
+          category: entry.key,
+          items: entry.value,
+          statuses: _statuses,
+          notes: _notes,
+          attachmentPaths: _attachmentPaths,
+          onStatusChanged: _setStatus,
+          onNoteChanged: _setNote,
+          onPickAttachment: _pickAttachment,
+          onRemoveAttachment: _removeAttachment,
+        ),
+        const SizedBox(height: 12),
+      ],
+    ];
   }
 
   void _loadDraftOnce(List<IpalChecklistTemplate> templates) {
@@ -231,107 +308,6 @@ class _IpalChecklistFormScreenState
     _showMessage('Draft checklist berhasil disimpan.');
   }
 
-  Future<void> _sendIpalLog(
-    IpalChecklistTemplate checklistTemplate,
-    String action,
-  ) async {
-    final checklistDraft = _draftFor(checklistTemplate);
-    final missing = IpalChecklistPayloadBuilder.missingStatuses(
-      template: checklistTemplate,
-      draft: checklistDraft,
-    );
-    if (missing.isNotEmpty) {
-      _showMessage('Masih ada item checklist yang belum diisi.');
-      return;
-    }
-
-    final processRepository = ref.read(ipalProcessRepositoryProvider);
-    final processDraft = processRepository.readDraft();
-    if (processDraft == null) {
-      _showMessage('Draft Catatan Proses IPAL belum tersedia.');
-      return;
-    }
-    final normalizedProcessDraft = processDraft.copyWith(
-      tanggal: checklistDraft.tanggal,
-    );
-
-    if (normalizedProcessDraft.tanggal != checklistDraft.tanggal) {
-      _showMessage(
-        'Tanggal checklist dan catatan proses harus sama sebelum dikirim.',
-      );
-      return;
-    }
-
-    setState(() => _submitting = true);
-    Map<String, dynamic>? payload;
-    try {
-      final processMaster = await processRepository.getProcessMaster();
-      final processTemplate = processMaster.templates.firstWhere(
-        (template) => template.id == processDraft.templateId,
-        orElse: () => processMaster.templates.first,
-      );
-      payload = IpalLogPayloadBuilder.build(
-        action: action,
-        checklistTemplate: checklistTemplate,
-        checklistDraft: checklistDraft,
-        processTemplate: processTemplate,
-        processDraft: normalizedProcessDraft,
-        batchSections: processMaster.effectiveBatchSections,
-      );
-
-      await ref.read(ipalLogRepositoryProvider).createLog(payload);
-      await ref.read(ipalChecklistRepositoryProvider).clearDraft();
-      await processRepository.clearDraft();
-      ref.invalidate(ipalTodayLogProvider);
-      if (!mounted) return;
-      _statuses.clear();
-      _notes.clear();
-      _attachmentPaths.clear();
-      setState(() {
-        _submitting = false;
-        _fieldRevision++;
-      });
-      _showMessage(
-        action == 'SUBMIT'
-            ? 'Log IPAL berhasil di-submit.'
-            : 'Draft IPAL berhasil dikirim ke server.',
-      );
-    } on ApiException catch (error) {
-      if (!mounted) return;
-      setState(() => _submitting = false);
-      if (payload != null && _canQueue(error)) {
-        await _enqueueIpalLog(payload);
-        _showMessage(
-          'Koneksi belum stabil. Payload IPAL disimpan ke antrean submit.',
-        );
-        return;
-      }
-      _showMessage(error.message);
-    } catch (error) {
-      if (!mounted) return;
-      setState(() => _submitting = false);
-      _showMessage('Log IPAL gagal dikirim: $error');
-    }
-  }
-
-  Future<void> _confirmSendIpalLog(
-    IpalChecklistTemplate checklistTemplate,
-    String action,
-  ) async {
-    final isSubmit = action == 'SUBMIT';
-    final confirmed = await showHseConfirmDialog(
-      context: context,
-      title: isSubmit ? 'Submit Log IPAL' : 'Kirim Draft IPAL',
-      message: isSubmit
-          ? 'Log IPAL akan dikirim untuk approval. Lanjutkan?'
-          : 'Draft IPAL akan dikirim ke server. Lanjutkan?',
-      confirmLabel: isSubmit ? 'Submit' : 'Kirim Draft',
-    );
-    if (!confirmed || !mounted) return;
-
-    await _sendIpalLog(checklistTemplate, action);
-  }
-
   Future<void> _resetDraft() async {
     await ref.read(ipalChecklistRepositoryProvider).clearDraft();
     setState(() {
@@ -370,25 +346,6 @@ class _IpalChecklistFormScreenState
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  bool _canQueue(ApiException error) {
-    final statusCode = error.statusCode;
-    return statusCode == null || statusCode >= 500;
-  }
-
-  Future<void> _enqueueIpalLog(Map<String, dynamic> payload) {
-    return ref
-        .read(submitQueueServiceProvider)
-        .enqueue(
-          SubmitQueueItem(
-            id: 'ipal-${DateTime.now().microsecondsSinceEpoch}',
-            endpoint: '/ipal/logs',
-            method: 'POST',
-            payload: payload,
-            createdAt: DateTime.now(),
-          ),
-        );
   }
 
   String get _todayLabel => _dateFormat.format(DateTime.now());
@@ -600,6 +557,72 @@ class _CompletionList extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ChecklistTwoColumnGrid extends StatelessWidget {
+  const _ChecklistTwoColumnGrid({
+    required this.entries,
+    required this.fieldRevision,
+    required this.statuses,
+    required this.notes,
+    required this.attachmentPaths,
+    required this.onStatusChanged,
+    required this.onNoteChanged,
+    required this.onPickAttachment,
+    required this.onRemoveAttachment,
+  });
+
+  final List<MapEntry<String, List<IpalChecklistItem>>> entries;
+  final int fieldRevision;
+  final Map<String, String> statuses;
+  final Map<String, String> notes;
+  final Map<String, String> attachmentPaths;
+  final void Function(int itemId, String value) onStatusChanged;
+  final void Function(int itemId, String value) onNoteChanged;
+  final Future<void> Function(int itemId, ImageSource source) onPickAttachment;
+  final void Function(int itemId) onRemoveAttachment;
+
+  @override
+  Widget build(BuildContext context) {
+    final columns = [
+      <MapEntry<String, List<IpalChecklistItem>>>[],
+      <MapEntry<String, List<IpalChecklistItem>>>[],
+    ];
+    for (var index = 0; index < entries.length; index++) {
+      columns[index.isEven ? 0 : 1].add(entries[index]);
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var columnIndex = 0; columnIndex < columns.length; columnIndex++)
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(left: columnIndex == 0 ? 0 : 12),
+              child: Column(
+                children: [
+                  for (final entry in columns[columnIndex]) ...[
+                    _ChecklistCategoryCard(
+                      key: ValueKey('wide_${entry.key}_$fieldRevision'),
+                      category: entry.key,
+                      items: entry.value,
+                      statuses: statuses,
+                      notes: notes,
+                      attachmentPaths: attachmentPaths,
+                      onStatusChanged: onStatusChanged,
+                      onNoteChanged: onNoteChanged,
+                      onPickAttachment: onPickAttachment,
+                      onRemoveAttachment: onRemoveAttachment,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -872,18 +895,12 @@ class _ChecklistAttachmentPicker extends StatelessWidget {
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
     required this.saving,
-    required this.submitting,
     required this.onSaveDraft,
-    required this.onSendDraft,
-    required this.onSubmit,
     required this.onReset,
   });
 
   final bool saving;
-  final bool submitting;
   final VoidCallback onSaveDraft;
-  final VoidCallback onSendDraft;
-  final VoidCallback onSubmit;
   final VoidCallback onReset;
 
   @override
@@ -892,7 +909,7 @@ class _ActionBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         FilledButton.icon(
-          onPressed: saving || submitting ? null : onSaveDraft,
+          onPressed: saving ? null : onSaveDraft,
           icon: saving
               ? const SizedBox.square(
                   dimension: 18,
@@ -902,25 +919,8 @@ class _ActionBar extends StatelessWidget {
           label: const Text('Simpan Draft Checklist'),
         ),
         const SizedBox(height: 10),
-        OutlinedButton.icon(
-          onPressed: submitting ? null : onSendDraft,
-          icon: const Icon(Icons.cloud_upload_outlined),
-          label: const Text('Kirim Sebagai Draft IPAL'),
-        ),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: submitting ? null : onSubmit,
-          icon: submitting
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.send_outlined),
-          label: const Text('Submit Log IPAL'),
-        ),
-        const SizedBox(height: 10),
         TextButton.icon(
-          onPressed: submitting ? null : onReset,
+          onPressed: saving ? null : onReset,
           icon: const Icon(Icons.refresh),
           label: const Text('Reset Draft Checklist'),
         ),
@@ -970,14 +970,5 @@ class _ErrorState extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-extension on IpalProcessMaster {
-  List<IpalProcessSection> get effectiveBatchSections {
-    if (batchSections.isNotEmpty) return batchSections;
-    if (batchItems.isEmpty) return const [];
-
-    return [IpalProcessSection(id: 0, name: 'Batch Mixing', items: batchItems)];
   }
 }

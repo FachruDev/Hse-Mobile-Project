@@ -1,14 +1,20 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../core/storage/local_cache_service.dart';
 import 'ipal_log_remote_data_source.dart';
 
 part 'ipal_log_repository.g.dart';
 
 class IpalLogRepository {
-  const IpalLogRepository(this._remoteDataSource);
+  const IpalLogRepository({
+    required IpalLogRemoteDataSource remoteDataSource,
+    required LocalCacheService historyCache,
+  }) : _remoteDataSource = remoteDataSource,
+       _historyCache = historyCache;
 
   final IpalLogRemoteDataSource _remoteDataSource;
+  final LocalCacheService _historyCache;
 
   Future<Map<String, dynamic>> createLog(Map<String, dynamic> payload) {
     return _remoteDataSource.createLog(payload);
@@ -20,18 +26,44 @@ class IpalLogRepository {
     String? dateFrom,
     String? dateTo,
     int perPage = 50,
-  }) {
-    return _remoteDataSource.listLogs(
+  }) async {
+    final cacheKey = _listCacheKey(
       month: month,
       year: year,
       dateFrom: dateFrom,
       dateTo: dateTo,
       perPage: perPage,
     );
+
+    try {
+      final response = await _remoteDataSource.listLogs(
+        month: month,
+        year: year,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        perPage: perPage,
+      );
+      await _historyCache.writeFreshJson(cacheKey, response);
+      return response;
+    } catch (_) {
+      final cached = _historyCache.readJsonMap(cacheKey);
+      if (cached == null) rethrow;
+      return cached;
+    }
   }
 
-  Future<Map<String, dynamic>> detailLog(int logId) {
-    return _remoteDataSource.detailLog(logId);
+  Future<Map<String, dynamic>> detailLog(int logId) async {
+    final cacheKey = 'ipal_log_detail:$logId';
+
+    try {
+      final response = await _remoteDataSource.detailLog(logId);
+      await _historyCache.writeFreshJson(cacheKey, response);
+      return response;
+    } catch (_) {
+      final cached = _historyCache.readJsonMap(cacheKey);
+      if (cached == null) rethrow;
+      return cached;
+    }
   }
 
   Future<Map<String, dynamic>> submitLog(int logId) {
@@ -40,6 +72,23 @@ class IpalLogRepository {
 
   Future<Map<String, dynamic>> approveLog(int logId) {
     return _remoteDataSource.approveLog(logId);
+  }
+
+  String _listCacheKey({
+    int? month,
+    int? year,
+    String? dateFrom,
+    String? dateTo,
+    required int perPage,
+  }) {
+    return [
+      'ipal_logs',
+      month?.toString() ?? '',
+      year?.toString() ?? '',
+      dateFrom ?? '',
+      dateTo ?? '',
+      perPage.toString(),
+    ].join(':');
   }
 }
 
@@ -50,5 +99,8 @@ IpalLogRemoteDataSource ipalLogRemoteDataSource(Ref ref) {
 
 @Riverpod(keepAlive: true)
 IpalLogRepository ipalLogRepository(Ref ref) {
-  return IpalLogRepository(ref.watch(ipalLogRemoteDataSourceProvider));
+  return IpalLogRepository(
+    remoteDataSource: ref.watch(ipalLogRemoteDataSourceProvider),
+    historyCache: ref.watch(masterDataCacheProvider),
+  );
 }

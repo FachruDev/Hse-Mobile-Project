@@ -16,6 +16,7 @@ class IpalFloatingScrollControls extends StatefulWidget {
 class _IpalFloatingScrollControlsState
     extends State<IpalFloatingScrollControls> {
   bool _collapsed = false;
+  int _scrollToken = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -76,27 +77,42 @@ class _IpalFloatingScrollControlsState
     if (!widget.controller.hasClients) return;
 
     HapticFeedback.selectionClick();
-    _animateTo(0);
+    _animateToEdge(() => 0);
   }
 
   void _scrollToBottom() {
     if (!widget.controller.hasClients) return;
 
     HapticFeedback.selectionClick();
-    _animateTo(widget.controller.position.maxScrollExtent);
+    _animateToEdge(() => widget.controller.position.maxScrollExtent);
   }
 
-  void _animateTo(double target) {
-    final current = widget.controller.offset;
-    final distance = (target - current).abs();
-    if (distance < 8) return;
+  Future<void> _animateToEdge(double Function() targetResolver) async {
+    final token = ++_scrollToken;
 
-    final milliseconds = (320 + distance * 0.28).clamp(420, 980).round();
-    widget.controller.animateTo(
-      target,
-      duration: Duration(milliseconds: milliseconds),
-      curve: Curves.easeInOutCubic,
-    );
+    for (var pass = 0; pass < 2; pass++) {
+      if (!mounted || token != _scrollToken || !widget.controller.hasClients) {
+        return;
+      }
+
+      final position = widget.controller.position;
+      final target = targetResolver().clamp(
+        position.minScrollExtent,
+        position.maxScrollExtent,
+      );
+      final current = widget.controller.offset;
+      final distance = (target - current).abs();
+      if (distance < 4) return;
+
+      final milliseconds = (360 + distance * 0.2).clamp(460, 1400).round();
+      await widget.controller.animateTo(
+        target,
+        duration: Duration(milliseconds: milliseconds),
+        curve: Curves.easeInOutCubic,
+      );
+
+      await Future<void>.delayed(const Duration(milliseconds: 48));
+    }
   }
 }
 

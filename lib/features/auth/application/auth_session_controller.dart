@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/session/unauthorized_signal.dart';
+import '../../../core/storage/local_cache_service.dart';
 import '../../../core/storage/secure_token_storage.dart';
 import '../data/auth_repository_impl.dart';
 import '../domain/entities/auth_session.dart';
@@ -31,6 +32,18 @@ class AuthSessionController extends _$AuthSessionController {
     await ref.read(authRepositoryProvider).logout();
     state = const AsyncData(AuthSession());
   }
+
+  Future<void> refreshSession() async {
+    final current = state.value;
+    if (current == null || !current.isAuthenticated) return;
+
+    final refreshed = await AsyncValue.guard(
+      () => ref.read(authRepositoryProvider).refreshSession(),
+    );
+    if (refreshed.hasValue) {
+      state = refreshed;
+    }
+  }
 }
 
 @Riverpod(keepAlive: true)
@@ -38,5 +51,6 @@ AuthRepository authRepository(Ref ref) {
   return AuthRepositoryImpl(
     remoteDataSource: ref.watch(authRemoteDataSourceProvider),
     tokenStorage: ref.watch(secureTokenStorageProvider),
+    sessionCache: ref.watch(masterDataCacheProvider),
   );
 }

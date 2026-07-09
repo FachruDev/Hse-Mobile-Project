@@ -29,17 +29,30 @@ class IpalProcessRepositoryImpl implements IpalProcessRepository {
   Future<IpalProcessMaster> getProcessMaster({
     bool forceRefresh = false,
   }) async {
+    final cachedMaster = _readCachedMaster();
+    if (!forceRefresh &&
+        cachedMaster != null &&
+        _masterCache.isFresh(_masterCacheKey)) {
+      return cachedMaster;
+    }
+
     try {
       final master = await _remoteDataSource.getProcessMaster();
-      await _masterCache.writeJson(_masterCacheKey, master.toJson());
+      await _masterCache.writeFreshJson(_masterCacheKey, master.toJson());
       return master;
     } catch (error) {
-      final cached = _masterCache.readJsonMap(_masterCacheKey);
-      if (cached != null) return IpalProcessMaster.fromJson(cached);
+      final cached = _readCachedMaster();
+      if (cached != null) return cached;
       throw FormatException(
         'Master catatan proses tidak sesuai kontrak: $error',
       );
     }
+  }
+
+  IpalProcessMaster? _readCachedMaster() {
+    final cached = _masterCache.readJsonMap(_masterCacheKey);
+    if (cached == null) return null;
+    return IpalProcessMaster.fromJson(cached);
   }
 
   @override

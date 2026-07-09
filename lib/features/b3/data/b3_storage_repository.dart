@@ -55,18 +55,44 @@ class B3StorageRepository {
     String? dateFrom,
     String? dateTo,
     int perPage = 50,
-  }) {
-    return _remoteDataSource.listLogs(
+  }) async {
+    final cacheKey = _listCacheKey(
       month: month,
       year: year,
       dateFrom: dateFrom,
       dateTo: dateTo,
       perPage: perPage,
     );
+
+    try {
+      final response = await _remoteDataSource.listLogs(
+        month: month,
+        year: year,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        perPage: perPage,
+      );
+      await _masterCache.writeFreshJson(cacheKey, response);
+      return response;
+    } catch (_) {
+      final cached = _masterCache.readJsonMap(cacheKey);
+      if (cached == null) rethrow;
+      return cached;
+    }
   }
 
-  Future<Map<String, dynamic>> detailLog(int logId) {
-    return _remoteDataSource.detailLog(logId);
+  Future<Map<String, dynamic>> detailLog(int logId) async {
+    final cacheKey = 'b3_log_detail:$logId';
+
+    try {
+      final response = await _remoteDataSource.detailLog(logId);
+      await _masterCache.writeFreshJson(cacheKey, response);
+      return response;
+    } catch (_) {
+      final cached = _masterCache.readJsonMap(cacheKey);
+      if (cached == null) rethrow;
+      return cached;
+    }
   }
 
   Future<Map<String, dynamic>> deleteLog(int logId) {
@@ -93,18 +119,45 @@ class B3StorageRepository {
     required String cacheKey,
     required Future<List<B3MasterOption>> Function() loader,
   }) async {
+    final freshCached = _readCachedMaster(cacheKey);
+    if (freshCached.isNotEmpty && _masterCache.isFresh(cacheKey)) {
+      return freshCached;
+    }
+
     try {
       final items = await loader();
-      await _masterCache.writeJson(
+      await _masterCache.writeFreshJson(
         cacheKey,
         items.map((item) => item.toJson()).toList(growable: false),
       );
       return items;
     } catch (_) {
-      final cached = _masterCache.readJsonList(cacheKey);
+      final cached = _readCachedMaster(cacheKey);
       if (cached.isEmpty) rethrow;
-      return cached.map(B3MasterOption.fromJson).toList(growable: false);
+      return cached;
     }
+  }
+
+  List<B3MasterOption> _readCachedMaster(String cacheKey) {
+    final cached = _masterCache.readJsonList(cacheKey);
+    return cached.map(B3MasterOption.fromJson).toList(growable: false);
+  }
+
+  String _listCacheKey({
+    int? month,
+    int? year,
+    String? dateFrom,
+    String? dateTo,
+    required int perPage,
+  }) {
+    return [
+      'b3_logs',
+      month?.toString() ?? '',
+      year?.toString() ?? '',
+      dateFrom ?? '',
+      dateTo ?? '',
+      perPage.toString(),
+    ].join(':');
   }
 }
 
