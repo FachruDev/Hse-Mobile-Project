@@ -15,13 +15,14 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _userIdController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _loginController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _userIdController.dispose();
-    _emailController.dispose();
+    _loginController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -89,37 +90,58 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   ),
                                   const SizedBox(height: 20),
                                   TextFormField(
-                                    controller: _userIdController,
+                                    controller: _loginController,
                                     textInputAction: TextInputAction.next,
                                     decoration: const InputDecoration(
-                                      labelText: 'User ID',
-                                      prefixIcon: Icon(Icons.badge_outlined),
+                                      labelText: 'User ID atau Email',
+                                      prefixIcon: Icon(Icons.alternate_email),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
                                           value.trim().isEmpty) {
-                                        return 'User ID wajib diisi.';
+                                        return 'User ID atau email wajib diisi.';
                                       }
                                       return null;
                                     },
                                   ),
                                   const SizedBox(height: 16),
                                   TextFormField(
-                                    controller: _emailController,
-                                    keyboardType: TextInputType.emailAddress,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Email',
-                                      prefixIcon: Icon(Icons.alternate_email),
+                                    controller: _passwordController,
+                                    obscureText: _obscurePassword,
+                                    textInputAction: TextInputAction.done,
+                                    decoration: InputDecoration(
+                                      labelText: 'Password',
+                                      prefixIcon: const Icon(
+                                        Icons.lock_outline,
+                                      ),
+                                      suffixIcon: IconButton(
+                                        tooltip: _obscurePassword
+                                            ? 'Tampilkan password'
+                                            : 'Sembunyikan password',
+                                        onPressed: () {
+                                          setState(() {
+                                            _obscurePassword =
+                                                !_obscurePassword;
+                                          });
+                                        },
+                                        icon: Icon(
+                                          _obscurePassword
+                                              ? Icons.visibility_outlined
+                                              : Icons.visibility_off_outlined,
+                                        ),
+                                      ),
                                     ),
                                     validator: (value) {
                                       if (value == null ||
                                           value.trim().isEmpty) {
-                                        return 'Email wajib diisi.';
-                                      }
-                                      if (!value.contains('@')) {
-                                        return 'Format email belum sesuai.';
+                                        return 'Password wajib diisi.';
                                       }
                                       return null;
+                                    },
+                                    onFieldSubmitted: (_) {
+                                      if (!authState.isLoading) {
+                                        _submit();
+                                      }
                                     },
                                   ),
                                   const SizedBox(height: 24),
@@ -163,8 +185,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     await ref
         .read(authSessionControllerProvider.notifier)
         .login(
-          userId: _userIdController.text.trim(),
-          email: _emailController.text.trim(),
+          login: _loginController.text.trim(),
+          password: _passwordController.text,
         );
   }
 }
@@ -179,7 +201,7 @@ class _LoginHeader extends StatelessWidget {
         const HseBrandMark(size: 64),
         const SizedBox(height: 16),
         Text(
-          'HSE Mobile',
+          'HSE Platform',
           textAlign: TextAlign.center,
           style: Theme.of(context).textTheme.headlineSmall,
         ),

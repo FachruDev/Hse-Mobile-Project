@@ -19,12 +19,16 @@ class AuthSessionController extends _$AuthSessionController {
     return ref.watch(authRepositoryProvider).restoreSession();
   }
 
-  Future<void> login({required String userId, required String email}) async {
+  Future<void> login({required String login, required String password}) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(
       () => ref
           .read(authRepositoryProvider)
-          .login(userId: userId, email: email, deviceName: 'flutter-mobile'),
+          .login(
+            login: login,
+            password: password,
+            deviceName: 'flutter-mobile',
+          ),
     );
   }
 

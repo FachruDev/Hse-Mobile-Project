@@ -7,13 +7,13 @@ class AuthRemoteDataSource {
   final ApiClient _apiClient;
 
   Future<LoginResult> login({
-    required String userId,
-    required String email,
+    required String login,
+    required String password,
     required String deviceName,
   }) async {
     final response = await _apiClient.post<Map<String, dynamic>>(
       '/auth/login',
-      data: {'user_id': userId, 'email': email, 'device_name': deviceName},
+      data: {'login': login, 'password': password, 'device_name': deviceName},
     );
 
     final data = Map<String, dynamic>.from(response['data'] as Map);

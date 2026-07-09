@@ -64,13 +64,13 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<AuthSession> login({
-    required String userId,
-    required String email,
+    required String login,
+    required String password,
     required String deviceName,
   }) async {
     final result = await _remoteDataSource.login(
-      userId: userId,
-      email: email,
+      login: login,
+      password: password,
       deviceName: deviceName,
     );
     await _tokenStorage.writeToken(result.token);
