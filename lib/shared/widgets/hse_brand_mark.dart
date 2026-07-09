@@ -5,7 +5,7 @@ import '../../color_config.dart';
 class HseBrandMark extends StatelessWidget {
   const HseBrandMark({
     this.size = 48,
-    this.backgroundColor = AppColors.primary,
+    this.backgroundColor = AppColors.white,
     this.foregroundColor = AppColors.white,
     super.key,
   });
@@ -24,10 +24,21 @@ class HseBrandMark extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,
-      child: Icon(
-        Icons.health_and_safety_outlined,
-        color: foregroundColor,
-        size: size * 0.58,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: EdgeInsets.all(size * 0.12),
+        child: Image.asset(
+          'assets/icons/logo.png',
+          width: size * 0.76,
+          height: size * 0.76,
+          fit: BoxFit.contain,
+          semanticLabel: 'Logo HSE Platform',
+          errorBuilder: (context, error, stackTrace) => Icon(
+            Icons.health_and_safety_outlined,
+            color: foregroundColor,
+            size: size * 0.58,
+          ),
+        ),
       ),
     );
   }

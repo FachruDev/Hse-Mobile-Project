@@ -12,10 +12,12 @@ Future<Map<String, dynamic>> ipalLogList(
   Ref ref, {
   required int month,
   required int year,
+  String? dateFrom,
+  String? dateTo,
 }) {
   return ref
       .watch(ipalLogRepositoryProvider)
-      .listLogs(month: month, year: year);
+      .listLogs(month: month, year: year, dateFrom: dateFrom, dateTo: dateTo);
 }
 
 @riverpod
@@ -27,7 +29,12 @@ Future<Map<String, dynamic>> ipalLogDetail(Ref ref, int logId) {
 Future<Map<String, dynamic>?> ipalTodayLog(Ref ref) async {
   final session = ref.watch(authSessionControllerProvider).value;
   final user = session?.user;
-  if (user == null || !user.hasPermission(AppPermissions.ipalLogsView)) {
+  if (user == null ||
+      !user.canAny([
+        AppPermissions.ipalLogsViewOwn,
+        AppPermissions.ipalLogsViewAll,
+        AppPermissions.ipalLogsView,
+      ])) {
     return null;
   }
 

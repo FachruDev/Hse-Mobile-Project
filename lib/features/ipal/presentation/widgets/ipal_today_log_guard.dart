@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../color_config.dart';
 import '../../../../shared/utils/api_response_parser.dart';
+import '../../../../shared/utils/hse_datetime_formatter.dart';
 import '../../application/ipal_log_controller.dart';
 
 class IpalTodayLogGuard extends ConsumerWidget {
@@ -35,6 +36,10 @@ class _ExistingLogView extends StatelessWidget {
   Widget build(BuildContext context) {
     final status = textValue(pathValue(log, ['process_log', 'status']));
     final id = int.tryParse(textValue(log['id'], fallback: ''));
+    final operatorName = textValue(
+      pathValue(log, ['operator', 'name']),
+      fallback: 'Operator',
+    );
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -45,27 +50,34 @@ class _ExistingLogView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Icons.lock_clock_outlined,
-                  color: AppColors.warning,
-                  size: 36,
+                Row(
+                  children: [
+                    const CircleAvatar(
+                      backgroundColor: AppColors.warningPastel,
+                      child: Icon(
+                        Icons.lock_clock_outlined,
+                        color: AppColors.warning,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Log IPAL hari ini sudah ada',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ),
+                    _StatusChip(status: status),
+                  ],
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'Log IPAL hari ini sudah ada',
-                  style: Theme.of(context).textTheme.titleLarge,
+                  'Tanggal ${HseDateTimeFormatter.date(log['tanggal'])} sudah pernah diisi oleh $operatorName. Pengisian ulang tidak tersedia dari aplikasi mobile.',
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Tanggal ${textValue(log['tanggal'])} sudah pernah diisi untuk akun ini. Pengisian ulang tidak tersedia dari aplikasi mobile.',
-                ),
-                const SizedBox(height: 12),
-                Text('Status: $status'),
                 const SizedBox(height: 18),
                 if (id != null)
                   FilledButton.icon(
                     icon: const Icon(Icons.visibility_outlined),
-                    label: const Text('Lihat Riwayat'),
+                    label: const Text('Lihat Detail'),
                     onPressed: () => context.push('/riwayat/ipal/$id'),
                   ),
               ],
@@ -73,6 +85,39 @@ class _ExistingLogView extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _StatusChip extends StatelessWidget {
+  const _StatusChip({required this.status});
+
+  final String status;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (status) {
+      'APPROVED' => AppColors.success,
+      'SUBMITTED' => AppColors.primary,
+      'DRAFT' => AppColors.warning,
+      _ => AppColors.textSecondary,
+    };
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Text(
+          status,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: color,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
     );
   }
 }

@@ -24,7 +24,8 @@ final class B3StorageLogListProvider
         $FutureProvider<Map<String, dynamic>> {
   B3StorageLogListProvider._({
     required B3StorageLogListFamily super.from,
-    required ({int month, int year}) super.argument,
+    required ({int month, int year, String? dateFrom, String? dateTo})
+    super.argument,
   }) : super(
          retry: null,
          name: r'b3StorageLogListProvider',
@@ -51,8 +52,16 @@ final class B3StorageLogListProvider
 
   @override
   FutureOr<Map<String, dynamic>> create(Ref ref) {
-    final argument = this.argument as ({int month, int year});
-    return b3StorageLogList(ref, month: argument.month, year: argument.year);
+    final argument =
+        this.argument
+            as ({int month, int year, String? dateFrom, String? dateTo});
+    return b3StorageLogList(
+      ref,
+      month: argument.month,
+      year: argument.year,
+      dateFrom: argument.dateFrom,
+      dateTo: argument.dateTo,
+    );
   }
 
   @override
@@ -66,13 +75,13 @@ final class B3StorageLogListProvider
   }
 }
 
-String _$b3StorageLogListHash() => r'b91406946ada03b4d0c45afc2345f75885bbcee4';
+String _$b3StorageLogListHash() => r'cc94bc733e881608833804f4b14e1038956ac8a1';
 
 final class B3StorageLogListFamily extends $Family
     with
         $FunctionalFamilyOverride<
           FutureOr<Map<String, dynamic>>,
-          ({int month, int year})
+          ({int month, int year, String? dateFrom, String? dateTo})
         > {
   B3StorageLogListFamily._()
     : super(
@@ -83,11 +92,15 @@ final class B3StorageLogListFamily extends $Family
         isAutoDispose: true,
       );
 
-  B3StorageLogListProvider call({required int month, required int year}) =>
-      B3StorageLogListProvider._(
-        argument: (month: month, year: year),
-        from: this,
-      );
+  B3StorageLogListProvider call({
+    required int month,
+    required int year,
+    String? dateFrom,
+    String? dateTo,
+  }) => B3StorageLogListProvider._(
+    argument: (month: month, year: year, dateFrom: dateFrom, dateTo: dateTo),
+    from: this,
+  );
 
   @override
   String toString() => r'b3StorageLogListProvider';

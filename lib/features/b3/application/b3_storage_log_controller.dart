@@ -11,10 +11,12 @@ Future<Map<String, dynamic>> b3StorageLogList(
   Ref ref, {
   required int month,
   required int year,
+  String? dateFrom,
+  String? dateTo,
 }) {
   return ref
       .watch(b3StorageRepositoryProvider)
-      .listLogs(month: month, year: year);
+      .listLogs(month: month, year: year, dateFrom: dateFrom, dateTo: dateTo);
 }
 
 @riverpod

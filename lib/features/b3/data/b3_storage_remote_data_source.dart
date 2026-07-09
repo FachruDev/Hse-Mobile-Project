@@ -44,11 +44,15 @@ class B3StorageRemoteDataSource {
   Future<Map<String, dynamic>> listLogs({
     int? month,
     int? year,
+    String? dateFrom,
+    String? dateTo,
     int perPage = 50,
   }) {
     final queryParameters = <String, dynamic>{'per_page': perPage};
     if (month != null) queryParameters['month'] = month;
     if (year != null) queryParameters['year'] = year;
+    if (dateFrom != null) queryParameters['date_from'] = dateFrom;
+    if (dateTo != null) queryParameters['date_to'] = dateTo;
 
     return _apiClient.get<Map<String, dynamic>>(
       '/b3-storage/logs',

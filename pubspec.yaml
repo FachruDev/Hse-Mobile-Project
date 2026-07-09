@@ -28,7 +28,9 @@ dependencies:
   intl: ^0.20.2
   json_annotation: ^4.11.0
   mocktail: ^1.0.5
+  pdf: ^3.12.0
   permission_handler: ^12.0.3
+  printing: ^5.14.3
   reactive_forms: ^18.2.2
   riverpod: ^3.2.1
   riverpod_annotation: ^4.0.2
@@ -47,3 +49,33 @@ flutter:
     - .env
     - assets/images/
     - assets/icons/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  image_path: assets/icons/logo.png
+  adaptive_icon_background: "#0A57A4"
+  adaptive_icon_foreground: assets/icons/logo.png
+  web:
+    generate: true
+    image_path: assets/icons/logo.png
+    background_color: "#0A57A4"
+    theme_color: "#0A57A4"
+  windows:
+    generate: true
+    image_path: assets/icons/logo.png
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: assets/icons/logo.png
+
+flutter_native_splash:
+  color: "#0A57A4"
+  image: assets/icons/logo.png
+  android: true
+  ios: true
+  web: true
+  android_12:
+    color: "#0A57A4"
+    image: assets/icons/logo.png

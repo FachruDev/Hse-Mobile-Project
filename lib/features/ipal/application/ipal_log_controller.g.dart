@@ -24,7 +24,8 @@ final class IpalLogListProvider
         $FutureProvider<Map<String, dynamic>> {
   IpalLogListProvider._({
     required IpalLogListFamily super.from,
-    required ({int month, int year}) super.argument,
+    required ({int month, int year, String? dateFrom, String? dateTo})
+    super.argument,
   }) : super(
          retry: null,
          name: r'ipalLogListProvider',
@@ -51,8 +52,16 @@ final class IpalLogListProvider
 
   @override
   FutureOr<Map<String, dynamic>> create(Ref ref) {
-    final argument = this.argument as ({int month, int year});
-    return ipalLogList(ref, month: argument.month, year: argument.year);
+    final argument =
+        this.argument
+            as ({int month, int year, String? dateFrom, String? dateTo});
+    return ipalLogList(
+      ref,
+      month: argument.month,
+      year: argument.year,
+      dateFrom: argument.dateFrom,
+      dateTo: argument.dateTo,
+    );
   }
 
   @override
@@ -66,13 +75,13 @@ final class IpalLogListProvider
   }
 }
 
-String _$ipalLogListHash() => r'812bd2355f4ae3edca93d9b0db764d182d8e37bf';
+String _$ipalLogListHash() => r'3d8ecd99f86ac21c36ed75fdc4b9660489227e3b';
 
 final class IpalLogListFamily extends $Family
     with
         $FunctionalFamilyOverride<
           FutureOr<Map<String, dynamic>>,
-          ({int month, int year})
+          ({int month, int year, String? dateFrom, String? dateTo})
         > {
   IpalLogListFamily._()
     : super(
@@ -83,8 +92,15 @@ final class IpalLogListFamily extends $Family
         isAutoDispose: true,
       );
 
-  IpalLogListProvider call({required int month, required int year}) =>
-      IpalLogListProvider._(argument: (month: month, year: year), from: this);
+  IpalLogListProvider call({
+    required int month,
+    required int year,
+    String? dateFrom,
+    String? dateTo,
+  }) => IpalLogListProvider._(
+    argument: (month: month, year: year, dateFrom: dateFrom, dateTo: dateTo),
+    from: this,
+  );
 
   @override
   String toString() => r'ipalLogListProvider';
@@ -206,4 +222,4 @@ final class IpalTodayLogProvider
   }
 }
 
-String _$ipalTodayLogHash() => r'7d1ccd3c118f4d1a20731698c5fdc1749d94b46f';
+String _$ipalTodayLogHash() => r'd0cdccda4ac11ad58922000e3d87ed6f08563a97';

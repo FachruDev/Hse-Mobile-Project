@@ -6,7 +6,10 @@ import '../../../color_config.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/permissions/app_permissions.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
+import '../../../shared/pdf/hse_pdf_builders.dart';
+import '../../../shared/pdf/hse_pdf_exporter.dart';
 import '../../../shared/utils/api_response_parser.dart';
+import '../../../shared/utils/hse_datetime_formatter.dart';
 import '../../auth/application/auth_session_controller.dart';
 import '../application/b3_storage_log_controller.dart';
 import '../data/b3_storage_repository.dart';
@@ -34,6 +37,12 @@ class B3LogDetailScreen extends ConsumerWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 _DetailCard(data: data),
+                const SizedBox(height: 12),
+                FilledButton.icon(
+                  icon: const Icon(Icons.picture_as_pdf_outlined),
+                  label: const Text('Export PDF'),
+                  onPressed: () => _exportPdf(context, data),
+                ),
                 const SizedBox(height: 12),
                 _PhotoSection(
                   logId: logId,
@@ -63,6 +72,27 @@ class B3LogDetailScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
       ),
     );
+  }
+
+  Future<void> _exportPdf(
+    BuildContext context,
+    Map<String, dynamic> data,
+  ) async {
+    try {
+      await HsePdfExporter.preview(
+        fileName: 'penyimpanan-limbah-b3-log-$logId.pdf',
+        build: (logoBytes) =>
+            HsePdfBuilders.b3LogDetail(data, logoBytes: logoBytes),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF gagal dibuat: $error'),
+          backgroundColor: AppColors.danger,
+        ),
+      );
+    }
   }
 
   Future<void> _delete(BuildContext context, WidgetRef ref) async {
@@ -119,6 +149,14 @@ class _DetailCard extends StatelessWidget {
       pathValue(data, ['initiator_department', 'name']),
       fallback: textValue(data['initiator_department_other']),
     );
+    final initiatorUserName = textValue(
+      data['initiator_user_name'],
+      fallback: textValue(pathValue(data, ['initiator_user', 'name'])),
+    );
+    final operatorName = textValue(
+      pathValue(data, ['operator', 'name']),
+      fallback: textValue(data['operator_name']),
+    );
 
     return Card(
       child: Padding(
@@ -128,8 +166,14 @@ class _DetailCard extends StatelessWidget {
           children: [
             Text(wasteName, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
-            _InfoRow(label: 'Tanggal', value: textValue(data['movement_date'])),
-            _InfoRow(label: 'Jam', value: textValue(data['movement_time'])),
+            _InfoRow(
+              label: 'Tanggal',
+              value: HseDateTimeFormatter.date(data['movement_date']),
+            ),
+            _InfoRow(
+              label: 'Jam',
+              value: HseDateTimeFormatter.time(data['movement_time']),
+            ),
             _InfoRow(label: 'Tipe', value: textValue(data['movement_type'])),
             _InfoRow(
               label: 'Berat',
@@ -140,11 +184,13 @@ class _DetailCard extends StatelessWidget {
               value: textValue(data['document_number']),
             ),
             _InfoRow(label: 'Dept Inisiator', value: departmentName),
-            _InfoRow(
-              label: 'Operator',
-              value: textValue(pathValue(data, ['operator', 'name'])),
-            ),
+            _InfoRow(label: 'Petugas Inisiator', value: initiatorUserName),
+            _InfoRow(label: 'Operator', value: operatorName),
             _InfoRow(label: 'Catatan', value: textValue(data['note'])),
+            _InfoRow(
+              label: 'Dibuat Pada',
+              value: HseDateTimeFormatter.dateTime(data['created_at']),
+            ),
           ],
         ),
       ),

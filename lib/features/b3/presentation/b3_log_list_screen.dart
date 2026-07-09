@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../color_config.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../../shared/utils/api_response_parser.dart';
+import '../../../shared/utils/hse_datetime_formatter.dart';
 import '../application/b3_storage_log_controller.dart';
 
 class B3LogListScreen extends ConsumerStatefulWidget {
@@ -17,6 +18,8 @@ class B3LogListScreen extends ConsumerStatefulWidget {
 
 class _B3LogListScreenState extends ConsumerState<B3LogListScreen> {
   late DateTime _period;
+  DateTime? _dateFrom;
+  DateTime? _dateTo;
 
   @override
   void initState() {
@@ -27,9 +30,13 @@ class _B3LogListScreenState extends ConsumerState<B3LogListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final logs = ref.watch(
-      b3StorageLogListProvider(month: _period.month, year: _period.year),
+    final provider = b3StorageLogListProvider(
+      month: _period.month,
+      year: _period.year,
+      dateFrom: _dateText(_dateFrom),
+      dateTo: _dateText(_dateTo),
     );
+    final logs = ref.watch(provider);
 
     return HseAppScaffold(
       title: 'Riwayat B3',
@@ -39,9 +46,7 @@ class _B3LogListScreenState extends ConsumerState<B3LogListScreen> {
         IconButton(
           tooltip: 'Muat ulang',
           icon: const Icon(Icons.refresh),
-          onPressed: () => ref.invalidate(
-            b3StorageLogListProvider(month: _period.month, year: _period.year),
-          ),
+          onPressed: () => ref.invalidate(provider),
         ),
       ],
       body: Column(
@@ -49,6 +54,13 @@ class _B3LogListScreenState extends ConsumerState<B3LogListScreen> {
           _PeriodBar(
             period: _period,
             onChanged: (value) => setState(() => _period = value),
+            dateFrom: _dateFrom,
+            dateTo: _dateTo,
+            onPickDateRange: _pickDateRange,
+            onClearDateRange: () => setState(() {
+              _dateFrom = null;
+              _dateTo = null;
+            }),
           ),
           Expanded(
             child: logs.when(
@@ -71,6 +83,24 @@ class _B3LogListScreenState extends ConsumerState<B3LogListScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _pickDateRange() async {
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _dateFrom == null || _dateTo == null
+          ? null
+          : DateTimeRange(start: _dateFrom!, end: _dateTo!),
+    );
+
+    if (picked == null) return;
+
+    setState(() {
+      _dateFrom = picked.start;
+      _dateTo = picked.end;
+    });
   }
 }
 
@@ -100,7 +130,7 @@ class _B3LogCard extends StatelessWidget {
         ),
         title: Text('$wasteName • ${textValue(row['weight_kg'])} kg'),
         subtitle: Text(
-          '${textValue(row['movement_date'])} ${textValue(row['movement_time'])}\n'
+          '${HseDateTimeFormatter.dateAndTime(row['movement_date'], row['movement_time'])}\n'
           'Dokumen: ${textValue(row['document_number'])}',
         ),
         isThreeLine: true,
@@ -112,40 +142,88 @@ class _B3LogCard extends StatelessWidget {
 }
 
 class _PeriodBar extends StatelessWidget {
-  const _PeriodBar({required this.period, required this.onChanged});
+  const _PeriodBar({
+    required this.period,
+    required this.onChanged,
+    required this.dateFrom,
+    required this.dateTo,
+    required this.onPickDateRange,
+    required this.onClearDateRange,
+  });
 
   final DateTime period;
   final ValueChanged<DateTime> onChanged;
+  final DateTime? dateFrom;
+  final DateTime? dateTo;
+  final VoidCallback onPickDateRange;
+  final VoidCallback onClearDateRange;
 
   @override
   Widget build(BuildContext context) {
     final label = DateFormat('MMMM yyyy', 'id_ID').format(period);
+    final rangeLabel = dateFrom == null || dateTo == null
+        ? 'Filter tanggal'
+        : '${HseDateTimeFormatter.shortDate(dateFrom)} s.d. ${HseDateTimeFormatter.shortDate(dateTo)}';
 
     return Material(
       color: AppColors.white,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-        child: Row(
+        child: Column(
           children: [
-            IconButton(
-              tooltip: 'Bulan sebelumnya',
-              icon: const Icon(Icons.chevron_left),
-              onPressed: () =>
-                  onChanged(DateTime(period.year, period.month - 1)),
+            Row(
+              children: [
+                IconButton(
+                  tooltip: 'Bulan sebelumnya',
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () =>
+                      onChanged(DateTime(period.year, period.month - 1)),
+                ),
+                Expanded(
+                  child: Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Bulan berikutnya',
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () =>
+                      onChanged(DateTime(period.year, period.month + 1)),
+                ),
+              ],
             ),
-            Expanded(
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium,
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.date_range_outlined),
+                    label: Text(rangeLabel, overflow: TextOverflow.ellipsis),
+                    onPressed: onPickDateRange,
+                  ),
+                ),
+                if (dateFrom != null || dateTo != null) ...[
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Hapus filter tanggal',
+                    icon: const Icon(Icons.close),
+                    onPressed: onClearDateRange,
+                  ),
+                ],
+              ],
+            ),
+            if (dateFrom != null || dateTo != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Filter tanggal aktif. Bulan/tahun diabaikan oleh API.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ),
-            ),
-            IconButton(
-              tooltip: 'Bulan berikutnya',
-              icon: const Icon(Icons.chevron_right),
-              onPressed: () =>
-                  onChanged(DateTime(period.year, period.month + 1)),
-            ),
           ],
         ),
       ),
@@ -171,4 +249,12 @@ class _EmptyState extends StatelessWidget {
 
 Color _movementColor(String movementType) {
   return movementType == 'KELUAR' ? AppColors.warning : AppColors.success;
+}
+
+String? _dateText(DateTime? date) {
+  if (date == null) return null;
+
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
 }

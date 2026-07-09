@@ -13,7 +13,7 @@ class HseMobileApp extends ConsumerWidget {
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'HSE Mobile',
+      title: 'HSE Platform',
       theme: AppTheme.light,
       routerConfig: router,
     );

@@ -1,11 +1,11 @@
 {
-    "name": "hse_mobile",
-    "short_name": "hse_mobile",
+    "name": "HSE Platform",
+    "short_name": "HSE Platform",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0A57A4",
+    "theme_color": "#0A57A4",
+    "description": "HSE Platform",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

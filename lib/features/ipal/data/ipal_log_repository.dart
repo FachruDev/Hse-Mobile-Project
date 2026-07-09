@@ -17,11 +17,15 @@ class IpalLogRepository {
   Future<Map<String, dynamic>> listLogs({
     int? month,
     int? year,
+    String? dateFrom,
+    String? dateTo,
     int perPage = 50,
   }) {
     return _remoteDataSource.listLogs(
       month: month,
       year: year,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
       perPage: perPage,
     );
   }

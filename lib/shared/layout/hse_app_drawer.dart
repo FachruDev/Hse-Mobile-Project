@@ -3,114 +3,152 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../color_config.dart';
-import '../../core/permissions/app_permissions.dart';
 import '../../features/auth/application/auth_session_controller.dart';
-import '../../features/auth/domain/entities/app_user.dart';
+import '../navigation/mobile_menu.dart';
 import '../widgets/hse_brand_mark.dart';
 
-class HseAppDrawer extends ConsumerWidget {
+class HseAppDrawer extends ConsumerStatefulWidget {
   const HseAppDrawer({required this.selectedPath, super.key});
 
   final String selectedPath;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HseAppDrawer> createState() => _HseAppDrawerState();
+}
+
+class _HseAppDrawerState extends ConsumerState<HseAppDrawer> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(authSessionControllerProvider).value;
     final user = session?.user;
+    final query = _query.trim().toLowerCase();
+    final sections = visibleMobileMenuSections(user)
+        .map(
+          (section) => MobileMenuSection(
+            title: section.title,
+            items: section.items
+                .where(
+                  (item) =>
+                      query.isEmpty ||
+                      item.title.toLowerCase().contains(query) ||
+                      item.subtitle.toLowerCase().contains(query),
+                )
+                .toList(growable: false),
+          ),
+        )
+        .where((section) => section.items.isNotEmpty)
+        .toList(growable: false);
 
     return Drawer(
+      backgroundColor: AppColors.white,
       child: SafeArea(
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-              child: Row(
-                children: [
-                  const HseBrandMark(size: 44),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'HSE Mobile',
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          user?.department?.name ?? 'Departemen',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
+            DecoratedBox(
+              decoration: const BoxDecoration(color: AppColors.primary),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+                child: Row(
+                  children: [
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(6),
+                        child: HseBrandMark(size: 42),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.name ?? 'Pengguna',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: AppColors.white),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user?.department?.name ?? 'Departemen',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: AppColors.white.withValues(
+                                    alpha: 0.82,
+                                  ),
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Icon(Icons.chevron_right, color: AppColors.white),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+              child: TextField(
+                controller: _searchController,
+                onChanged: (value) => setState(() => _query = value),
+                decoration: InputDecoration(
+                  hintText: 'Cari menu',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _query.isEmpty
+                      ? null
+                      : IconButton(
+                          tooltip: 'Hapus pencarian',
+                          icon: const Icon(Icons.close),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() => _query = '');
+                          },
+                        ),
+                ),
               ),
             ),
             const Divider(height: 1),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+                padding: const EdgeInsets.symmetric(vertical: 10),
                 children: [
                   _DrawerItem(
-                    selected: selectedPath == '/beranda',
+                    selected: widget.selectedPath == '/beranda',
                     icon: Icons.dashboard_outlined,
                     label: 'Dashboard',
+                    subtitle: 'Ringkasan dan draft lokal',
                     onTap: () => _go(context, '/beranda'),
                   ),
-                  if (user.hasAll([
-                    AppPermissions.masterProcessView,
-                    AppPermissions.masterBatchView,
-                    AppPermissions.ipalLogsCreate,
-                  ]))
-                    _DrawerItem(
-                      selected: selectedPath == '/form/ipal/proses',
-                      icon: Icons.fact_check_outlined,
-                      label: 'Catatan Proses IPAL',
-                      onTap: () => _go(context, '/form/ipal/proses'),
-                    ),
-                  if (user.hasAll([
-                    AppPermissions.masterChecklistView,
-                    AppPermissions.ipalLogsCreate,
-                  ]))
-                    _DrawerItem(
-                      selected: selectedPath == '/form/ipal/checklist',
-                      icon: Icons.checklist_outlined,
-                      label: 'Checklist Harian',
-                      onTap: () => _go(context, '/form/ipal/checklist'),
-                    ),
-                  if (user.hasAll([
-                    AppPermissions.b3StorageMasterView,
-                    AppPermissions.b3StorageLogsCreate,
-                  ]))
-                    _DrawerItem(
-                      selected: selectedPath == '/form/b3',
-                      icon: Icons.inventory_2_outlined,
-                      label: 'Penyimpanan Limbah B3',
-                      onTap: () => _go(context, '/form/b3'),
-                    ),
-                  if (user.hasAll([AppPermissions.ipalLogsView]))
-                    _DrawerItem(
-                      selected: selectedPath == '/riwayat/ipal',
-                      icon: Icons.history_outlined,
-                      label: 'Riwayat IPAL',
-                      onTap: () => _go(context, '/riwayat/ipal'),
-                    ),
-                  if (user.hasAll([AppPermissions.b3StorageLogsView]))
-                    _DrawerItem(
-                      selected: selectedPath == '/riwayat/b3',
-                      icon: Icons.receipt_long_outlined,
-                      label: 'Riwayat B3',
-                      onTap: () => _go(context, '/riwayat/b3'),
-                    ),
-                  if (user.hasAll([AppPermissions.b3StorageMonthlyReportView]))
-                    _DrawerItem(
-                      selected: selectedPath == '/laporan/b3',
-                      icon: Icons.assignment_outlined,
-                      label: 'Laporan Bulanan B3',
-                      onTap: () => _go(context, '/laporan/b3'),
+                  for (final section in sections) ...[
+                    _DrawerSectionTitle(section.title),
+                    for (final item in section.items)
+                      _DrawerItem(
+                        selected: widget.selectedPath == item.path,
+                        icon: item.icon,
+                        label: item.title,
+                        subtitle: item.subtitle,
+                        onTap: () => _go(context, item.path),
+                      ),
+                  ],
+                  if (sections.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('Menu tidak ditemukan.'),
                     ),
                 ],
               ),
@@ -136,24 +174,19 @@ class HseAppDrawer extends ConsumerWidget {
   }
 }
 
-extension on AppUser? {
-  bool hasAll(Iterable<String> permissions) {
-    final user = this;
-    return user != null && user.canAll(permissions);
-  }
-}
-
 class _DrawerItem extends StatelessWidget {
   const _DrawerItem({
     required this.selected,
     required this.icon,
     required this.label,
+    required this.subtitle,
     required this.onTap,
   });
 
   final bool selected;
   final IconData icon;
   final String label;
+  final String subtitle;
   final VoidCallback onTap;
 
   @override
@@ -163,11 +196,41 @@ class _DrawerItem extends StatelessWidget {
       child: ListTile(
         selected: selected,
         selectedColor: AppColors.primary,
-        selectedTileColor: AppColors.primary.withValues(alpha: 0.08),
+        selectedTileColor: AppColors.primaryPastel,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        leading: Icon(icon),
+        leading: DecoratedBox(
+          decoration: BoxDecoration(
+            color: selected ? AppColors.white : AppColors.surfaceMuted,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(icon, size: 20),
+          ),
+        ),
         title: Text(label),
+        subtitle: Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+class _DrawerSectionTitle extends StatelessWidget {
+  const _DrawerSectionTitle(this.title);
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w800,
+        ),
       ),
     );
   }

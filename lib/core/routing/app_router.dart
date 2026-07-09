@@ -3,10 +3,10 @@ import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/auth/application/auth_session_controller.dart';
+import '../../features/auth/domain/entities/app_user.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/b3/presentation/b3_log_detail_screen.dart';
 import '../../features/b3/presentation/b3_log_list_screen.dart';
-import '../../features/b3/presentation/b3_monthly_report_screen.dart';
 import '../../features/b3/presentation/b3_storage_form_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/ipal/presentation/ipal_checklist_form_screen.dart';
@@ -21,28 +21,44 @@ part 'app_router.g.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
-const _routePermissions = <String, List<String>>{
-  '/form/ipal/proses': [
-    AppPermissions.masterProcessView,
-    AppPermissions.masterBatchView,
-    AppPermissions.ipalLogsCreate,
-  ],
-  '/form/ipal/checklist': [
-    AppPermissions.masterChecklistView,
-    AppPermissions.ipalLogsCreate,
-  ],
-  '/form/b3': [
-    AppPermissions.b3StorageMasterView,
-    AppPermissions.b3StorageLogsCreate,
-  ],
-  '/riwayat/ipal': [AppPermissions.ipalLogsView],
-  '/riwayat/b3': [AppPermissions.b3StorageLogsView],
-  '/laporan/b3': [AppPermissions.b3StorageMonthlyReportView],
+const _routePermissions = <String, _RoutePermissionRequirement>{
+  '/form/ipal/proses': _RoutePermissionRequirement(
+    all: [
+      AppPermissions.masterProcessView,
+      AppPermissions.masterBatchView,
+      AppPermissions.ipalLogsCreate,
+    ],
+  ),
+  '/form/ipal/checklist': _RoutePermissionRequirement(
+    all: [AppPermissions.masterChecklistView, AppPermissions.ipalLogsCreate],
+  ),
+  '/form/b3': _RoutePermissionRequirement(
+    all: [
+      AppPermissions.b3StorageMasterView,
+      AppPermissions.b3StorageLogsCreate,
+    ],
+  ),
+  '/riwayat/ipal': _RoutePermissionRequirement(
+    any: [
+      AppPermissions.ipalLogsViewOwn,
+      AppPermissions.ipalLogsViewAll,
+      AppPermissions.ipalLogsView,
+    ],
+  ),
+  '/riwayat/b3': _RoutePermissionRequirement(
+    any: [
+      AppPermissions.b3StorageLogsViewOwn,
+      AppPermissions.b3StorageLogsViewAll,
+      AppPermissions.b3StorageLogsView,
+    ],
+  ),
 };
 
-List<String>? _requiredPermissionsForPath(String path) {
+_RoutePermissionRequirement? _requiredPermissionsForPath(String path) {
   final exact = _routePermissions[path];
-  if (exact != null) return exact;
+  if (exact != null) {
+    return exact;
+  }
 
   if (path.startsWith('/riwayat/ipal/')) {
     return _routePermissions['/riwayat/ipal'];
@@ -51,6 +67,20 @@ List<String>? _requiredPermissionsForPath(String path) {
     return _routePermissions['/riwayat/b3'];
   }
   return null;
+}
+
+class _RoutePermissionRequirement {
+  const _RoutePermissionRequirement({
+    this.all = const <String>[],
+    this.any = const <String>[],
+  });
+
+  final List<String> all;
+  final List<String> any;
+
+  bool allows(AppUser user) {
+    return user.canAll(all) && (any.isEmpty || user.canAny(any));
+  }
 }
 
 @Riverpod(keepAlive: true)
@@ -78,7 +108,7 @@ GoRouter appRouter(Ref ref) {
 
       final requiredPermissions = _requiredPermissionsForPath(path);
       if (requiredPermissions != null &&
-          !session.user!.canAll(requiredPermissions)) {
+          !requiredPermissions.allows(session.user!)) {
         return '/tidak-berwenang';
       }
 
@@ -125,10 +155,6 @@ GoRouter appRouter(Ref ref) {
         builder: (context, state) => B3LogDetailScreen(
           logId: int.tryParse(state.pathParameters['id'] ?? '') ?? 0,
         ),
-      ),
-      GoRoute(
-        path: '/laporan/b3',
-        builder: (context, state) => const B3MonthlyReportScreen(),
       ),
       GoRoute(
         path: '/tidak-berwenang',

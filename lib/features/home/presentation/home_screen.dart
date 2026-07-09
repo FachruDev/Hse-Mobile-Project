@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../color_config.dart';
-import '../../../core/permissions/app_permissions.dart';
 import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
+import '../../../shared/navigation/mobile_menu.dart';
 import '../../auth/application/auth_session_controller.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../b3/data/b3_storage_repository.dart';
@@ -20,6 +20,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authSessionControllerProvider).value;
     final user = session?.user;
+    final sections = visibleMobileMenuSections(user);
 
     return HseAppScaffold(
       title: 'Dashboard',
@@ -32,66 +33,18 @@ class HomeScreen extends ConsumerWidget {
           const SizedBox(height: 16),
           const _QuickStatusGrid(),
           const SizedBox(height: 24),
-          Text('Menu Form', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          _ModuleTile(
-            title: 'Catatan Proses IPAL',
-            subtitle: 'Proses harian dan batch mixing.',
-            icon: Icons.fact_check_outlined,
-            enabled: user.hasAll([
-              AppPermissions.masterProcessView,
-              AppPermissions.masterBatchView,
-              AppPermissions.ipalLogsCreate,
-            ]),
-            onTap: () => context.push('/form/ipal/proses'),
-          ),
-          _ModuleTile(
-            title: 'Checklist Pemeriksaan Harian',
-            subtitle: 'Status unit dan catatan pemeriksaan.',
-            icon: Icons.checklist_outlined,
-            enabled: user.hasAll([
-              AppPermissions.masterChecklistView,
-              AppPermissions.ipalLogsCreate,
-            ]),
-            onTap: () => context.push('/form/ipal/checklist'),
-          ),
-          _ModuleTile(
-            title: 'Penyimpanan Limbah B3',
-            subtitle: 'Input log masuk atau keluar TPS LB3.',
-            icon: Icons.inventory_2_outlined,
-            enabled: user.hasAll([
-              AppPermissions.b3StorageMasterView,
-              AppPermissions.b3StorageLogsCreate,
-            ]),
-            onTap: () => context.push('/form/b3'),
-          ),
-          const SizedBox(height: 12),
-          Text('Riwayat', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          _ModuleTile(
-            title: 'Riwayat IPAL',
-            subtitle: 'Daftar log IPAL bulanan dan detail approval.',
-            icon: Icons.history_outlined,
-            enabled: user.hasAll([AppPermissions.ipalLogsView]),
-            onTap: () => context.push('/riwayat/ipal'),
-          ),
-          _ModuleTile(
-            title: 'Riwayat B3',
-            subtitle: 'Daftar log penyimpanan limbah B3.',
-            icon: Icons.receipt_long_outlined,
-            enabled: user.hasAll([AppPermissions.b3StorageLogsView]),
-            onTap: () => context.push('/riwayat/b3'),
-          ),
-          const SizedBox(height: 12),
-          Text('Laporan', style: Theme.of(context).textTheme.titleMedium),
-          const SizedBox(height: 12),
-          _ModuleTile(
-            title: 'Laporan Bulanan B3',
-            subtitle: 'Rekap dan approval bulanan penyimpanan limbah B3.',
-            icon: Icons.assignment_outlined,
-            enabled: user.hasAll([AppPermissions.b3StorageMonthlyReportView]),
-            onTap: () => context.push('/laporan/b3'),
-          ),
+          for (final section in sections) ...[
+            Text(section.title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            for (final item in section.items)
+              _ModuleTile(
+                title: item.title,
+                subtitle: item.subtitle,
+                icon: item.icon,
+                onTap: () => context.push(item.path),
+              ),
+            const SizedBox(height: 12),
+          ],
         ],
       ),
     );
@@ -246,14 +199,12 @@ class _ModuleTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.icon,
-    required this.enabled,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData icon;
-  final bool enabled;
   final VoidCallback onTap;
 
   @override
@@ -264,32 +215,20 @@ class _ModuleTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
         minVerticalPadding: 16,
-        enabled: enabled,
         leading: Container(
           width: 42,
           height: 42,
           decoration: BoxDecoration(
-            color: enabled
-                ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                : AppColors.surfaceMuted,
+            color: AppColors.primaryPastel,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: enabled ? theme.colorScheme.primary : null),
+          child: Icon(icon, color: theme.colorScheme.primary),
         ),
         title: Text(title),
-        subtitle: Text(
-          enabled ? subtitle : 'Akses belum tersedia untuk akun ini.',
-        ),
+        subtitle: Text(subtitle),
         trailing: const Icon(Icons.chevron_right),
-        onTap: enabled ? onTap : null,
+        onTap: onTap,
       ),
     );
-  }
-}
-
-extension on AppUser? {
-  bool hasAll(Iterable<String> permissions) {
-    final user = this;
-    return user != null && user.canAll(permissions);
   }
 }
