@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$B3StorageDraft {
 
- String get movementDate; String get movementTime; String get movementType; int? get wasteTypeId; String? get wasteTypeOther; int? get initiatorDepartmentId; String? get initiatorDepartmentOther; String? get weightKg; String? get documentNumber; String? get photoPath; String? get note;
+ String get movementDate; String get movementTime; String get movementType; int? get wasteTypeId; String? get wasteTypeOther; int? get initiatorDepartmentId; String? get initiatorDepartmentOther; String? get initiatorUserName; String? get weightKg; String? get documentNumber; String? get photoPath; String? get note;
 /// Create a copy of B3StorageDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $B3StorageDraftCopyWith<B3StorageDraft> get copyWith => _$B3StorageDraftCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is B3StorageDraft&&(identical(other.movementDate, movementDate) || other.movementDate == movementDate)&&(identical(other.movementTime, movementTime) || other.movementTime == movementTime)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.wasteTypeId, wasteTypeId) || other.wasteTypeId == wasteTypeId)&&(identical(other.wasteTypeOther, wasteTypeOther) || other.wasteTypeOther == wasteTypeOther)&&(identical(other.initiatorDepartmentId, initiatorDepartmentId) || other.initiatorDepartmentId == initiatorDepartmentId)&&(identical(other.initiatorDepartmentOther, initiatorDepartmentOther) || other.initiatorDepartmentOther == initiatorDepartmentOther)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.documentNumber, documentNumber) || other.documentNumber == documentNumber)&&(identical(other.photoPath, photoPath) || other.photoPath == photoPath)&&(identical(other.note, note) || other.note == note));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is B3StorageDraft&&(identical(other.movementDate, movementDate) || other.movementDate == movementDate)&&(identical(other.movementTime, movementTime) || other.movementTime == movementTime)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.wasteTypeId, wasteTypeId) || other.wasteTypeId == wasteTypeId)&&(identical(other.wasteTypeOther, wasteTypeOther) || other.wasteTypeOther == wasteTypeOther)&&(identical(other.initiatorDepartmentId, initiatorDepartmentId) || other.initiatorDepartmentId == initiatorDepartmentId)&&(identical(other.initiatorDepartmentOther, initiatorDepartmentOther) || other.initiatorDepartmentOther == initiatorDepartmentOther)&&(identical(other.initiatorUserName, initiatorUserName) || other.initiatorUserName == initiatorUserName)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.documentNumber, documentNumber) || other.documentNumber == documentNumber)&&(identical(other.photoPath, photoPath) || other.photoPath == photoPath)&&(identical(other.note, note) || other.note == note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,movementDate,movementTime,movementType,wasteTypeId,wasteTypeOther,initiatorDepartmentId,initiatorDepartmentOther,weightKg,documentNumber,photoPath,note);
+int get hashCode => Object.hash(runtimeType,movementDate,movementTime,movementType,wasteTypeId,wasteTypeOther,initiatorDepartmentId,initiatorDepartmentOther,initiatorUserName,weightKg,documentNumber,photoPath,note);
 
 @override
 String toString() {
-  return 'B3StorageDraft(movementDate: $movementDate, movementTime: $movementTime, movementType: $movementType, wasteTypeId: $wasteTypeId, wasteTypeOther: $wasteTypeOther, initiatorDepartmentId: $initiatorDepartmentId, initiatorDepartmentOther: $initiatorDepartmentOther, weightKg: $weightKg, documentNumber: $documentNumber, photoPath: $photoPath, note: $note)';
+  return 'B3StorageDraft(movementDate: $movementDate, movementTime: $movementTime, movementType: $movementType, wasteTypeId: $wasteTypeId, wasteTypeOther: $wasteTypeOther, initiatorDepartmentId: $initiatorDepartmentId, initiatorDepartmentOther: $initiatorDepartmentOther, initiatorUserName: $initiatorUserName, weightKg: $weightKg, documentNumber: $documentNumber, photoPath: $photoPath, note: $note)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $B3StorageDraftCopyWith<$Res>  {
   factory $B3StorageDraftCopyWith(B3StorageDraft value, $Res Function(B3StorageDraft) _then) = _$B3StorageDraftCopyWithImpl;
 @useResult
 $Res call({
- String movementDate, String movementTime, String movementType, int? wasteTypeId, String? wasteTypeOther, int? initiatorDepartmentId, String? initiatorDepartmentOther, String? weightKg, String? documentNumber, String? photoPath, String? note
+ String movementDate, String movementTime, String movementType, int? wasteTypeId, String? wasteTypeOther, int? initiatorDepartmentId, String? initiatorDepartmentOther, String? initiatorUserName, String? weightKg, String? documentNumber, String? photoPath, String? note
 });
 
 
@@ -65,7 +65,7 @@ class _$B3StorageDraftCopyWithImpl<$Res>
 
 /// Create a copy of B3StorageDraft
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? movementDate = null,Object? movementTime = null,Object? movementType = null,Object? wasteTypeId = freezed,Object? wasteTypeOther = freezed,Object? initiatorDepartmentId = freezed,Object? initiatorDepartmentOther = freezed,Object? weightKg = freezed,Object? documentNumber = freezed,Object? photoPath = freezed,Object? note = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? movementDate = null,Object? movementTime = null,Object? movementType = null,Object? wasteTypeId = freezed,Object? wasteTypeOther = freezed,Object? initiatorDepartmentId = freezed,Object? initiatorDepartmentOther = freezed,Object? initiatorUserName = freezed,Object? weightKg = freezed,Object? documentNumber = freezed,Object? photoPath = freezed,Object? note = freezed,}) {
   return _then(_self.copyWith(
 movementDate: null == movementDate ? _self.movementDate : movementDate // ignore: cast_nullable_to_non_nullable
 as String,movementTime: null == movementTime ? _self.movementTime : movementTime // ignore: cast_nullable_to_non_nullable
@@ -74,6 +74,7 @@ as String,wasteTypeId: freezed == wasteTypeId ? _self.wasteTypeId : wasteTypeId 
 as int?,wasteTypeOther: freezed == wasteTypeOther ? _self.wasteTypeOther : wasteTypeOther // ignore: cast_nullable_to_non_nullable
 as String?,initiatorDepartmentId: freezed == initiatorDepartmentId ? _self.initiatorDepartmentId : initiatorDepartmentId // ignore: cast_nullable_to_non_nullable
 as int?,initiatorDepartmentOther: freezed == initiatorDepartmentOther ? _self.initiatorDepartmentOther : initiatorDepartmentOther // ignore: cast_nullable_to_non_nullable
+as String?,initiatorUserName: freezed == initiatorUserName ? _self.initiatorUserName : initiatorUserName // ignore: cast_nullable_to_non_nullable
 as String?,weightKg: freezed == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
 as String?,documentNumber: freezed == documentNumber ? _self.documentNumber : documentNumber // ignore: cast_nullable_to_non_nullable
 as String?,photoPath: freezed == photoPath ? _self.photoPath : photoPath // ignore: cast_nullable_to_non_nullable
@@ -163,10 +164,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String movementDate,  String movementTime,  String movementType,  int? wasteTypeId,  String? wasteTypeOther,  int? initiatorDepartmentId,  String? initiatorDepartmentOther,  String? weightKg,  String? documentNumber,  String? photoPath,  String? note)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String movementDate,  String movementTime,  String movementType,  int? wasteTypeId,  String? wasteTypeOther,  int? initiatorDepartmentId,  String? initiatorDepartmentOther,  String? initiatorUserName,  String? weightKg,  String? documentNumber,  String? photoPath,  String? note)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _B3StorageDraft() when $default != null:
-return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.wasteTypeId,_that.wasteTypeOther,_that.initiatorDepartmentId,_that.initiatorDepartmentOther,_that.weightKg,_that.documentNumber,_that.photoPath,_that.note);case _:
+return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.wasteTypeId,_that.wasteTypeOther,_that.initiatorDepartmentId,_that.initiatorDepartmentOther,_that.initiatorUserName,_that.weightKg,_that.documentNumber,_that.photoPath,_that.note);case _:
   return orElse();
 
 }
@@ -184,10 +185,10 @@ return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.w
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String movementDate,  String movementTime,  String movementType,  int? wasteTypeId,  String? wasteTypeOther,  int? initiatorDepartmentId,  String? initiatorDepartmentOther,  String? weightKg,  String? documentNumber,  String? photoPath,  String? note)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String movementDate,  String movementTime,  String movementType,  int? wasteTypeId,  String? wasteTypeOther,  int? initiatorDepartmentId,  String? initiatorDepartmentOther,  String? initiatorUserName,  String? weightKg,  String? documentNumber,  String? photoPath,  String? note)  $default,) {final _that = this;
 switch (_that) {
 case _B3StorageDraft():
-return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.wasteTypeId,_that.wasteTypeOther,_that.initiatorDepartmentId,_that.initiatorDepartmentOther,_that.weightKg,_that.documentNumber,_that.photoPath,_that.note);case _:
+return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.wasteTypeId,_that.wasteTypeOther,_that.initiatorDepartmentId,_that.initiatorDepartmentOther,_that.initiatorUserName,_that.weightKg,_that.documentNumber,_that.photoPath,_that.note);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +205,10 @@ return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.w
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String movementDate,  String movementTime,  String movementType,  int? wasteTypeId,  String? wasteTypeOther,  int? initiatorDepartmentId,  String? initiatorDepartmentOther,  String? weightKg,  String? documentNumber,  String? photoPath,  String? note)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String movementDate,  String movementTime,  String movementType,  int? wasteTypeId,  String? wasteTypeOther,  int? initiatorDepartmentId,  String? initiatorDepartmentOther,  String? initiatorUserName,  String? weightKg,  String? documentNumber,  String? photoPath,  String? note)?  $default,) {final _that = this;
 switch (_that) {
 case _B3StorageDraft() when $default != null:
-return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.wasteTypeId,_that.wasteTypeOther,_that.initiatorDepartmentId,_that.initiatorDepartmentOther,_that.weightKg,_that.documentNumber,_that.photoPath,_that.note);case _:
+return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.wasteTypeId,_that.wasteTypeOther,_that.initiatorDepartmentId,_that.initiatorDepartmentOther,_that.initiatorUserName,_that.weightKg,_that.documentNumber,_that.photoPath,_that.note);case _:
   return null;
 
 }
@@ -219,7 +220,7 @@ return $default(_that.movementDate,_that.movementTime,_that.movementType,_that.w
 @JsonSerializable()
 
 class _B3StorageDraft implements B3StorageDraft {
-  const _B3StorageDraft({required this.movementDate, required this.movementTime, required this.movementType, this.wasteTypeId, this.wasteTypeOther, this.initiatorDepartmentId, this.initiatorDepartmentOther, this.weightKg, this.documentNumber, this.photoPath, this.note});
+  const _B3StorageDraft({required this.movementDate, required this.movementTime, required this.movementType, this.wasteTypeId, this.wasteTypeOther, this.initiatorDepartmentId, this.initiatorDepartmentOther, this.initiatorUserName, this.weightKg, this.documentNumber, this.photoPath, this.note});
   factory _B3StorageDraft.fromJson(Map<String, dynamic> json) => _$B3StorageDraftFromJson(json);
 
 @override final  String movementDate;
@@ -229,6 +230,7 @@ class _B3StorageDraft implements B3StorageDraft {
 @override final  String? wasteTypeOther;
 @override final  int? initiatorDepartmentId;
 @override final  String? initiatorDepartmentOther;
+@override final  String? initiatorUserName;
 @override final  String? weightKg;
 @override final  String? documentNumber;
 @override final  String? photoPath;
@@ -247,16 +249,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _B3StorageDraft&&(identical(other.movementDate, movementDate) || other.movementDate == movementDate)&&(identical(other.movementTime, movementTime) || other.movementTime == movementTime)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.wasteTypeId, wasteTypeId) || other.wasteTypeId == wasteTypeId)&&(identical(other.wasteTypeOther, wasteTypeOther) || other.wasteTypeOther == wasteTypeOther)&&(identical(other.initiatorDepartmentId, initiatorDepartmentId) || other.initiatorDepartmentId == initiatorDepartmentId)&&(identical(other.initiatorDepartmentOther, initiatorDepartmentOther) || other.initiatorDepartmentOther == initiatorDepartmentOther)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.documentNumber, documentNumber) || other.documentNumber == documentNumber)&&(identical(other.photoPath, photoPath) || other.photoPath == photoPath)&&(identical(other.note, note) || other.note == note));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _B3StorageDraft&&(identical(other.movementDate, movementDate) || other.movementDate == movementDate)&&(identical(other.movementTime, movementTime) || other.movementTime == movementTime)&&(identical(other.movementType, movementType) || other.movementType == movementType)&&(identical(other.wasteTypeId, wasteTypeId) || other.wasteTypeId == wasteTypeId)&&(identical(other.wasteTypeOther, wasteTypeOther) || other.wasteTypeOther == wasteTypeOther)&&(identical(other.initiatorDepartmentId, initiatorDepartmentId) || other.initiatorDepartmentId == initiatorDepartmentId)&&(identical(other.initiatorDepartmentOther, initiatorDepartmentOther) || other.initiatorDepartmentOther == initiatorDepartmentOther)&&(identical(other.initiatorUserName, initiatorUserName) || other.initiatorUserName == initiatorUserName)&&(identical(other.weightKg, weightKg) || other.weightKg == weightKg)&&(identical(other.documentNumber, documentNumber) || other.documentNumber == documentNumber)&&(identical(other.photoPath, photoPath) || other.photoPath == photoPath)&&(identical(other.note, note) || other.note == note));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,movementDate,movementTime,movementType,wasteTypeId,wasteTypeOther,initiatorDepartmentId,initiatorDepartmentOther,weightKg,documentNumber,photoPath,note);
+int get hashCode => Object.hash(runtimeType,movementDate,movementTime,movementType,wasteTypeId,wasteTypeOther,initiatorDepartmentId,initiatorDepartmentOther,initiatorUserName,weightKg,documentNumber,photoPath,note);
 
 @override
 String toString() {
-  return 'B3StorageDraft(movementDate: $movementDate, movementTime: $movementTime, movementType: $movementType, wasteTypeId: $wasteTypeId, wasteTypeOther: $wasteTypeOther, initiatorDepartmentId: $initiatorDepartmentId, initiatorDepartmentOther: $initiatorDepartmentOther, weightKg: $weightKg, documentNumber: $documentNumber, photoPath: $photoPath, note: $note)';
+  return 'B3StorageDraft(movementDate: $movementDate, movementTime: $movementTime, movementType: $movementType, wasteTypeId: $wasteTypeId, wasteTypeOther: $wasteTypeOther, initiatorDepartmentId: $initiatorDepartmentId, initiatorDepartmentOther: $initiatorDepartmentOther, initiatorUserName: $initiatorUserName, weightKg: $weightKg, documentNumber: $documentNumber, photoPath: $photoPath, note: $note)';
 }
 
 
@@ -267,7 +269,7 @@ abstract mixin class _$B3StorageDraftCopyWith<$Res> implements $B3StorageDraftCo
   factory _$B3StorageDraftCopyWith(_B3StorageDraft value, $Res Function(_B3StorageDraft) _then) = __$B3StorageDraftCopyWithImpl;
 @override @useResult
 $Res call({
- String movementDate, String movementTime, String movementType, int? wasteTypeId, String? wasteTypeOther, int? initiatorDepartmentId, String? initiatorDepartmentOther, String? weightKg, String? documentNumber, String? photoPath, String? note
+ String movementDate, String movementTime, String movementType, int? wasteTypeId, String? wasteTypeOther, int? initiatorDepartmentId, String? initiatorDepartmentOther, String? initiatorUserName, String? weightKg, String? documentNumber, String? photoPath, String? note
 });
 
 
@@ -284,7 +286,7 @@ class __$B3StorageDraftCopyWithImpl<$Res>
 
 /// Create a copy of B3StorageDraft
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? movementDate = null,Object? movementTime = null,Object? movementType = null,Object? wasteTypeId = freezed,Object? wasteTypeOther = freezed,Object? initiatorDepartmentId = freezed,Object? initiatorDepartmentOther = freezed,Object? weightKg = freezed,Object? documentNumber = freezed,Object? photoPath = freezed,Object? note = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? movementDate = null,Object? movementTime = null,Object? movementType = null,Object? wasteTypeId = freezed,Object? wasteTypeOther = freezed,Object? initiatorDepartmentId = freezed,Object? initiatorDepartmentOther = freezed,Object? initiatorUserName = freezed,Object? weightKg = freezed,Object? documentNumber = freezed,Object? photoPath = freezed,Object? note = freezed,}) {
   return _then(_B3StorageDraft(
 movementDate: null == movementDate ? _self.movementDate : movementDate // ignore: cast_nullable_to_non_nullable
 as String,movementTime: null == movementTime ? _self.movementTime : movementTime // ignore: cast_nullable_to_non_nullable
@@ -293,6 +295,7 @@ as String,wasteTypeId: freezed == wasteTypeId ? _self.wasteTypeId : wasteTypeId 
 as int?,wasteTypeOther: freezed == wasteTypeOther ? _self.wasteTypeOther : wasteTypeOther // ignore: cast_nullable_to_non_nullable
 as String?,initiatorDepartmentId: freezed == initiatorDepartmentId ? _self.initiatorDepartmentId : initiatorDepartmentId // ignore: cast_nullable_to_non_nullable
 as int?,initiatorDepartmentOther: freezed == initiatorDepartmentOther ? _self.initiatorDepartmentOther : initiatorDepartmentOther // ignore: cast_nullable_to_non_nullable
+as String?,initiatorUserName: freezed == initiatorUserName ? _self.initiatorUserName : initiatorUserName // ignore: cast_nullable_to_non_nullable
 as String?,weightKg: freezed == weightKg ? _self.weightKg : weightKg // ignore: cast_nullable_to_non_nullable
 as String?,documentNumber: freezed == documentNumber ? _self.documentNumber : documentNumber // ignore: cast_nullable_to_non_nullable
 as String?,photoPath: freezed == photoPath ? _self.photoPath : photoPath // ignore: cast_nullable_to_non_nullable

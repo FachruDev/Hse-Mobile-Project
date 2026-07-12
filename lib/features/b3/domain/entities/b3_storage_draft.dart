@@ -13,6 +13,7 @@ abstract class B3StorageDraft with _$B3StorageDraft {
     String? wasteTypeOther,
     int? initiatorDepartmentId,
     String? initiatorDepartmentOther,
+    String? initiatorUserName,
     String? weightKg,
     String? documentNumber,
     String? photoPath,

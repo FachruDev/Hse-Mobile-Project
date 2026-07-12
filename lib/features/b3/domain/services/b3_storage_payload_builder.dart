@@ -20,6 +20,7 @@ class B3StoragePayloadBuilder {
         'initiator_department_other',
         draft.initiatorDepartmentOther ?? '',
       ),
+      MapEntry('initiator_user_name', draft.initiatorUserName ?? ''),
       MapEntry('weight_kg', draft.weightKg ?? ''),
       MapEntry('document_number', draft.documentNumber ?? ''),
       MapEntry('note', draft.note ?? ''),
@@ -47,10 +48,12 @@ class B3StoragePayloadBuilder {
             draft.wasteTypeOther!.trim().isEmpty)) {
       errors.add('Jenis limbah wajib diisi.');
     }
-    if (draft.initiatorDepartmentId == null &&
-        (draft.initiatorDepartmentOther == null ||
-            draft.initiatorDepartmentOther!.trim().isEmpty)) {
+    if (draft.initiatorDepartmentId == null) {
       errors.add('Dept inisiator wajib diisi.');
+    }
+    if (draft.initiatorUserName == null ||
+        draft.initiatorUserName!.trim().isEmpty) {
+      errors.add('Nama petugas dept. inisiator wajib diisi.');
     }
     if (draft.weightKg == null || draft.weightKg!.trim().isEmpty) {
       errors.add('Berat limbah wajib diisi.');

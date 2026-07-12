@@ -31,7 +31,7 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
   final _weightController = TextEditingController();
   final _documentController = TextEditingController();
   final _wasteOtherController = TextEditingController();
-  final _departmentOtherController = TextEditingController();
+  final _initiatorUserNameController = TextEditingController();
   final _noteController = TextEditingController();
   final _imagePicker = ImagePicker();
 
@@ -50,7 +50,7 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
     _weightController.dispose();
     _documentController.dispose();
     _wasteOtherController.dispose();
-    _departmentOtherController.dispose();
+    _initiatorUserNameController.dispose();
     _noteController.dispose();
     super.dispose();
   }
@@ -93,7 +93,7 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
                   wasteTypeId: _wasteTypeId,
                   departmentId: _departmentId,
                   wasteOtherController: _wasteOtherController,
-                  departmentOtherController: _departmentOtherController,
+                  initiatorUserNameController: _initiatorUserNameController,
                   weightController: _weightController,
                   documentController: _documentController,
                   noteController: _noteController,
@@ -138,11 +138,9 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
     _wasteTypeId =
         draft.wasteTypeId ??
         (draft.wasteTypeOther == null ? null : _otherValue);
-    _departmentId =
-        draft.initiatorDepartmentId ??
-        (draft.initiatorDepartmentOther == null ? null : _otherValue);
+    _departmentId = draft.initiatorDepartmentId;
     _wasteOtherController.text = draft.wasteTypeOther ?? '';
-    _departmentOtherController.text = draft.initiatorDepartmentOther ?? '';
+    _initiatorUserNameController.text = draft.initiatorUserName ?? '';
     _weightController.text = draft.weightKg ?? '';
     _documentController.text = draft.documentNumber ?? '';
     _noteController.text = draft.note ?? '';
@@ -206,7 +204,7 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
         _weightController.clear();
         _documentController.clear();
         _wasteOtherController.clear();
-        _departmentOtherController.clear();
+        _initiatorUserNameController.clear();
         _noteController.clear();
         _wasteTypeId = null;
         _departmentId = null;
@@ -255,7 +253,7 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
       _weightController.clear();
       _documentController.clear();
       _wasteOtherController.clear();
-      _departmentOtherController.clear();
+      _initiatorUserNameController.clear();
       _noteController.clear();
     });
     _showMessage('Draft B3 lokal dihapus.');
@@ -283,12 +281,9 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
       wasteTypeOther: _wasteTypeId == _otherValue
           ? _wasteOtherController.text.trim()
           : null,
-      initiatorDepartmentId: _departmentId == _otherValue
-          ? null
-          : _departmentId,
-      initiatorDepartmentOther: _departmentId == _otherValue
-          ? _departmentOtherController.text.trim()
-          : null,
+      initiatorDepartmentId: _departmentId,
+      initiatorDepartmentOther: null,
+      initiatorUserName: _initiatorUserNameController.text.trim(),
       weightKg: _weightController.text.trim(),
       documentNumber: _documentController.text.trim(),
       photoPath: _photoPath,
@@ -412,7 +407,7 @@ class _WasteCard extends StatelessWidget {
     required this.wasteTypeId,
     required this.departmentId,
     required this.wasteOtherController,
-    required this.departmentOtherController,
+    required this.initiatorUserNameController,
     required this.weightController,
     required this.documentController,
     required this.noteController,
@@ -425,7 +420,7 @@ class _WasteCard extends StatelessWidget {
   final int? wasteTypeId;
   final int? departmentId;
   final TextEditingController wasteOtherController;
-  final TextEditingController departmentOtherController;
+  final TextEditingController initiatorUserNameController;
   final TextEditingController weightController;
   final TextEditingController documentController;
   final TextEditingController noteController;
@@ -472,22 +467,23 @@ class _WasteCard extends StatelessWidget {
               value: departmentId,
               options: departments,
               onChanged: onDepartmentChanged,
+              includeOther: false,
             ),
-            if (departmentId == _B3StorageFormScreenState._otherValue) ...[
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: departmentOtherController,
-                decoration: const InputDecoration(
-                  labelText: 'Dept inisiator lainnya',
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Dept inisiator lainnya wajib diisi.';
-                  }
-                  return null;
-                },
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: initiatorUserNameController,
+              decoration: const InputDecoration(
+                labelText: 'Nama Petugas Dept. Inisiator',
+                prefixIcon: Icon(Icons.badge_outlined),
               ),
-            ],
+              textInputAction: TextInputAction.next,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Nama petugas dept. inisiator wajib diisi.';
+                }
+                return null;
+              },
+            ),
             const SizedBox(height: 12),
             TextFormField(
               controller: weightController,
@@ -545,12 +541,14 @@ class _MasterDropdown extends StatelessWidget {
     required this.value,
     required this.options,
     required this.onChanged,
+    this.includeOther = true,
   });
 
   final String label;
   final int? value;
   final List<B3MasterOption> options;
   final ValueChanged<int?> onChanged;
+  final bool includeOther;
 
   @override
   Widget build(BuildContext context) {
@@ -563,10 +561,11 @@ class _MasterDropdown extends StatelessWidget {
       items: [
         for (final option in options.where((option) => option.isActive))
           DropdownMenuItem(value: option.id, child: Text(option.name)),
-        const DropdownMenuItem(
-          value: _B3StorageFormScreenState._otherValue,
-          child: Text('Yang lain'),
-        ),
+        if (includeOther)
+          const DropdownMenuItem(
+            value: _B3StorageFormScreenState._otherValue,
+            child: Text('Yang lain'),
+          ),
       ],
       validator: (value) {
         if (value == null) return '$label wajib dipilih.';
