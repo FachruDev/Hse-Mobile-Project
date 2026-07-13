@@ -157,10 +157,7 @@ class _HseAppDrawerState extends ConsumerState<HseAppDrawer> {
             ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Keluar'),
-              onTap: () async {
-                Navigator.of(context).pop();
-                await ref.read(authSessionControllerProvider.notifier).logout();
-              },
+              onTap: _confirmLogout,
             ),
           ],
         ),
@@ -171,6 +168,33 @@ class _HseAppDrawerState extends ConsumerState<HseAppDrawer> {
   void _go(BuildContext context, String path) {
     Navigator.of(context).pop();
     context.go(path);
+  }
+
+  Future<void> _confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        icon: const Icon(Icons.logout, color: AppColors.primary),
+        title: const Text('Keluar dari aplikasi?'),
+        content: const Text(
+          'Sesi Anda akan diakhiri. Pastikan draft yang sedang dikerjakan sudah tersimpan.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    Navigator.of(context).pop();
+    await ref.read(authSessionControllerProvider.notifier).logout();
   }
 }
 

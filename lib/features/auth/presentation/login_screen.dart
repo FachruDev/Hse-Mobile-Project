@@ -18,6 +18,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _loginController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loginAlertVisible = false;
 
   @override
   void dispose() {
@@ -34,9 +35,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final message = error is ApiException
             ? error.message
             : 'Login gagal. Periksa data dan koneksi Anda.';
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(message)));
+        _showLoginFailedAlert(message);
       }
     });
 
@@ -166,7 +165,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const _NetworkNotice(),
                       ],
                     ),
                   ),
@@ -188,6 +186,30 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           login: _loginController.text.trim(),
           password: _passwordController.text,
         );
+  }
+
+  void _showLoginFailedAlert(String message) {
+    if (_loginAlertVisible) return;
+    _loginAlertVisible = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => AlertDialog(
+          icon: const Icon(Icons.error_outline, color: AppColors.danger),
+          title: const Text('Login gagal'),
+          content: Text(message),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Mengerti'),
+            ),
+          ],
+        ),
+      );
+      _loginAlertVisible = false;
+    });
   }
 }
 
@@ -214,36 +236,6 @@ class _LoginHeader extends StatelessWidget {
           ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
         ),
       ],
-    );
-  }
-}
-
-class _NetworkNotice extends StatelessWidget {
-  const _NetworkNotice();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surfaceMuted,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(Icons.wifi_tethering_outlined, size: 20),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Akses tersedia melalui jaringan internal perusahaan.',
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
