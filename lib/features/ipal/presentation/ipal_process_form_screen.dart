@@ -21,6 +21,7 @@ import '../domain/entities/ipal_process_master.dart';
 import '../domain/services/ipal_checklist_payload_builder.dart';
 import '../domain/services/ipal_log_payload_builder.dart';
 import '../domain/services/ipal_process_payload_builder.dart';
+import '../../sync/presentation/widgets/submit_queue_status_banner.dart';
 import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
 import 'widgets/ipal_today_log_guard.dart';
@@ -143,6 +144,11 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                     icon: Icons.fact_check_outlined,
                   ),
                   const SizedBox(height: 12),
+                  const SubmitQueueStatusBanner(
+                    endpoints: {'/ipal/logs'},
+                    compact: true,
+                  ),
+                  const SizedBox(height: 12),
                   summary,
                   const SizedBox(height: 16),
                   const _SubmitNotice(),
@@ -174,6 +180,11 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                       const _FormTitleCard(
                         title: 'Catatan Proses IPAL',
                         icon: Icons.fact_check_outlined,
+                      ),
+                      const SizedBox(height: 12),
+                      const SubmitQueueStatusBanner(
+                        endpoints: {'/ipal/logs'},
+                        compact: true,
                       ),
                       const SizedBox(height: 12),
                       summary,

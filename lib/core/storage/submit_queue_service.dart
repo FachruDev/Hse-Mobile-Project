@@ -1,4 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart' show StreamProvider;
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -64,4 +65,21 @@ abstract class SubmitQueueItem with _$SubmitQueueItem {
 @Riverpod(keepAlive: true)
 SubmitQueueService submitQueueService(Ref ref) {
   return SubmitQueueService(Hive.box<dynamic>(HiveBoxNames.submitQueue));
+}
+
+final submitQueueItemsProvider = StreamProvider<List<SubmitQueueItem>>((ref) {
+  final box = Hive.box<dynamic>(HiveBoxNames.submitQueue);
+  final service = ref.watch(submitQueueServiceProvider);
+
+  return box
+      .watch()
+      .map((_) => service.pendingItems())
+      .startWith(service.pendingItems());
+});
+
+extension _StartWith<T> on Stream<T> {
+  Stream<T> startWith(T value) async* {
+    yield value;
+    yield* this;
+  }
 }

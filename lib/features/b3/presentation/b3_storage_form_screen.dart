@@ -13,6 +13,7 @@ import '../data/b3_storage_repository.dart';
 import '../domain/entities/b3_master_data.dart';
 import '../domain/entities/b3_storage_draft.dart';
 import '../domain/services/b3_storage_payload_builder.dart';
+import '../../sync/presentation/widgets/submit_queue_status_banner.dart';
 
 class B3StorageFormScreen extends ConsumerStatefulWidget {
   const B3StorageFormScreen({super.key});
@@ -76,6 +77,11 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
+                const SubmitQueueStatusBanner(
+                  endpoints: {'/b3-storage/logs'},
+                  compact: true,
+                ),
+                const SizedBox(height: 12),
                 _MovementCard(
                   dateLabel: _dateFormat.format(_movementDate),
                   timeLabel: _formatTime(_movementTime),

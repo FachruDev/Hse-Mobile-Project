@@ -6,13 +6,12 @@ import '../../../color_config.dart';
 import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../../shared/navigation/mobile_menu.dart';
-import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../../auth/application/auth_session_controller.dart';
 import '../../auth/domain/entities/app_user.dart';
 import '../../b3/data/b3_storage_repository.dart';
 import '../../ipal/data/ipal_checklist_repository_impl.dart';
 import '../../ipal/data/ipal_process_repository_impl.dart';
-import '../../sync/application/submit_queue_controller.dart';
+import '../../sync/presentation/widgets/submit_queue_status_banner.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -110,10 +109,7 @@ class _QuickStatusGrid extends ConsumerWidget {
       ref.watch(ipalChecklistRepositoryProvider).readDraft(),
       ref.watch(b3StorageRepositoryProvider).readDraft(),
     ].where((draft) => draft != null).length;
-    final queueCount = ref
-        .watch(submitQueueServiceProvider)
-        .pendingItems()
-        .length;
+    final queueCount = ref.watch(submitQueueItemsProvider).value?.length ?? 0;
 
     return Column(
       children: [
@@ -140,31 +136,7 @@ class _QuickStatusGrid extends ConsumerWidget {
         ),
         if (queueCount > 0) ...[
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              icon: const Icon(Icons.sync),
-              label: const Text('Kirim Ulang Antrean'),
-              onPressed: () async {
-                final confirmed = await showHseConfirmDialog(
-                  context: context,
-                  title: 'Kirim Ulang Antrean',
-                  message:
-                      'Semua antrean submit akan dicoba dikirim ulang. Lanjutkan?',
-                  confirmLabel: 'Kirim Ulang',
-                );
-                if (!confirmed || !context.mounted) return;
-
-                final messenger = ScaffoldMessenger.of(context);
-                final count = await ref
-                    .read(submitQueueProcessorProvider)
-                    .retryPending();
-                messenger.showSnackBar(
-                  SnackBar(content: Text('$count antrean berhasil dikirim.')),
-                );
-              },
-            ),
-          ),
+          const SubmitQueueStatusBanner(),
         ],
       ],
     );
