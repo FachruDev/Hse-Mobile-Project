@@ -74,6 +74,10 @@ class IpalLogRepository {
     return _remoteDataSource.approveLog(logId);
   }
 
+  Future<Map<String, dynamic>> reopenLog(int logId) {
+    return _remoteDataSource.reopenLog(logId);
+  }
+
   String _listCacheKey({
     int? month,
     int? year,

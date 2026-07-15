@@ -17,6 +17,7 @@ void main() {
                 {
                   'id': 100,
                   'name': 'Debit inlet',
+                  'code': 'debit_inlet_flow_meter',
                   'inputtype': 'number',
                   'standard_condition': 'Terukur',
                 },
@@ -49,6 +50,7 @@ void main() {
 
     expect(master.templates.single.id, 1);
     expect(processItem.label, 'Debit inlet');
+    expect(processItem.code, 'debit_inlet_flow_meter');
     expect(processItem.standard, 'Terukur');
     expect(processItem.inputType, HseInputType.number);
     expect(batchSection.name, 'Air limbah awal');

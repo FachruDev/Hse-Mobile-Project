@@ -13,6 +13,7 @@ class AppPermissions {
   static const ipalLogsView = 'ipal.logs.view';
   static const ipalLogsSubmit = 'ipal.logs.submit';
   static const ipalLogsApprove = 'ipal.logs.approve';
+  static const ipalLogsReopen = 'ipal.logs.reopen';
 
   static const b3StorageMasterView = 'b3storage.master.view';
   static const b3StorageLogsCreate = 'b3storage.logs.create';

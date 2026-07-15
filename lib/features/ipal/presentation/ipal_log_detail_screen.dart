@@ -30,6 +30,12 @@ class IpalLogDetailScreen extends ConsumerWidget {
       body: detail.when(
         data: (response) {
           final data = apiDataMap(response);
+          final processLog = _map(pathValue(data, ['process_log']));
+          final status = textValue(processLog['status'], fallback: 'DRAFT');
+          final canReopen =
+              (user?.hasPermission(AppPermissions.ipalLogsReopen) ?? false) &&
+              (status == 'SUBMITTED' || status == 'APPROVED');
+
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(ipalLogDetailProvider(logId)),
             child: ListView(
@@ -80,6 +86,25 @@ class IpalLogDetailScreen extends ConsumerWidget {
                         confirmMessage:
                             'Log akan disetujui sebagai data final harian. Lanjutkan?',
                         confirmLabel: 'Approve',
+                      ),
+                    ),
+                  ),
+                if (canReopen)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.lock_open_outlined),
+                      label: const Text('Kembalikan ke Draft'),
+                      onPressed: () => _runAction(
+                        context,
+                        ref,
+                        () => ref
+                            .read(ipalLogRepositoryProvider)
+                            .reopenLog(logId),
+                        confirmTitle: 'Kembalikan Log IPAL',
+                        confirmMessage:
+                            'Log akan dikembalikan ke draft dan bisa diedit lagi. Lanjutkan?',
+                        confirmLabel: 'Kembalikan',
                       ),
                     ),
                   ),

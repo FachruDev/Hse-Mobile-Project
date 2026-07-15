@@ -34,6 +34,16 @@ void main() {
               label: 'Kondisi visual',
               inputType: HseInputType.option,
             ),
+            IpalProcessItem(
+              id: 104,
+              label: 'Debit inlet pada flow meter',
+              inputType: HseInputType.optionWithIntegerM3,
+            ),
+            IpalProcessItem(
+              id: 105,
+              label: 'Lumpur SV30',
+              inputType: HseInputType.percentage,
+            ),
           ],
         ),
       ],
@@ -46,6 +56,8 @@ void main() {
         '101': 'Normal',
         '102': '5',
         '103': 'Standar',
+        '104': 'Tidak Standar|120',
+        '105': '45.5',
       },
       processNotes: {'100': 'Stabil'},
       processAttachmentPaths: {'100': 'C:/tmp/process.jpg'},
@@ -68,6 +80,10 @@ void main() {
     expect(values[2]['value_text'], isNull);
     expect(values[3]['value_number'], isNull);
     expect(values[3]['value_text'], 'Standar');
+    expect(values[4]['value_number'], 120);
+    expect(values[4]['value_text'], 'Tidak Standar');
+    expect(values[5]['value_number'], 45.5);
+    expect(values[5]['value_text'], isNull);
   });
 
   test('buildBatchPayload mempertahankan batch_no', () {

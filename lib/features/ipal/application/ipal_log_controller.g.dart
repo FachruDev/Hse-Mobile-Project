@@ -223,3 +223,45 @@ final class IpalTodayLogProvider
 }
 
 String _$ipalTodayLogHash() => r'd0cdccda4ac11ad58922000e3d87ed6f08563a97';
+
+@ProviderFor(ipalProcessReferences)
+final ipalProcessReferencesProvider = IpalProcessReferencesProvider._();
+
+final class IpalProcessReferencesProvider
+    extends
+        $FunctionalProvider<
+          AsyncValue<Map<String, IpalProcessReference>>,
+          Map<String, IpalProcessReference>,
+          FutureOr<Map<String, IpalProcessReference>>
+        >
+    with
+        $FutureModifier<Map<String, IpalProcessReference>>,
+        $FutureProvider<Map<String, IpalProcessReference>> {
+  IpalProcessReferencesProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ipalProcessReferencesProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ipalProcessReferencesHash();
+
+  @$internal
+  @override
+  $FutureProviderElement<Map<String, IpalProcessReference>> $createElement(
+    $ProviderPointer pointer,
+  ) => $FutureProviderElement(pointer);
+
+  @override
+  FutureOr<Map<String, IpalProcessReference>> create(Ref ref) {
+    return ipalProcessReferences(ref);
+  }
+}
+
+String _$ipalProcessReferencesHash() =>
+    r'842a8b8b9bdbcfa87d2d955441b98f0df02df693';

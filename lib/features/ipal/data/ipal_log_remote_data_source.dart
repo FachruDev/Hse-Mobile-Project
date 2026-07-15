@@ -48,4 +48,8 @@ class IpalLogRemoteDataSource {
   Future<Map<String, dynamic>> approveLog(int logId) {
     return _apiClient.post<Map<String, dynamic>>('/ipal/logs/$logId/approve');
   }
+
+  Future<Map<String, dynamic>> reopenLog(int logId) {
+    return _apiClient.post<Map<String, dynamic>>('/ipal/logs/$logId/reopen');
+  }
 }

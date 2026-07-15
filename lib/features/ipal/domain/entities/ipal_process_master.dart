@@ -82,6 +82,7 @@ abstract class IpalProcessItem with _$IpalProcessItem {
       toJson: _inputTypeToJson,
     )
     required HseInputType inputType,
+    String? code,
     String? standard,
     @Default(<FormSelectOption>[]) List<FormSelectOption> options,
     @JsonKey(name: 'order_no') int? orderNo,
@@ -130,6 +131,7 @@ Map<String, dynamic> _normalizeItem(Map<String, dynamic> json) {
         json['inputtype'] ??
         json['inputType'] ??
         json['type'],
+    'code': (json['code'] ?? json['slug'])?.toString(),
     'standard': (json['standard_condition'] ?? json['standard'])?.toString(),
     'options': _normalizeOptions(json),
     'order_no': _nullableIntValue(json['order_no'] ?? json['orderNo']),

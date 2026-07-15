@@ -79,6 +79,7 @@ _IpalProcessItem _$IpalProcessItemFromJson(Map<String, dynamic> json) =>
       id: (json['id'] as num).toInt(),
       label: json['label'] as String,
       inputType: _inputTypeFromJson(json['input_type'] as String?),
+      code: json['code'] as String?,
       standard: json['standard'] as String?,
       options:
           (json['options'] as List<dynamic>?)
@@ -93,6 +94,7 @@ Map<String, dynamic> _$IpalProcessItemToJson(_IpalProcessItem instance) =>
       'id': instance.id,
       'label': instance.label,
       'input_type': _inputTypeToJson(instance.inputType),
+      'code': instance.code,
       'standard': instance.standard,
       'options': instance.options,
       'order_no': instance.orderNo,

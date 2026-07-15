@@ -13,7 +13,9 @@ class FormFieldFactory {
     required String controlName,
   }) {
     return switch (definition.inputType) {
-      HseInputType.number || HseInputType.decimal2 => AppTextInput(
+      HseInputType.number ||
+      HseInputType.decimal2 ||
+      HseInputType.percentage => AppTextInput(
         controlName: controlName,
         label: definition.label,
         helperText: definition.standard,
@@ -25,7 +27,9 @@ class FormFieldFactory {
         helperText: definition.standard,
         keyboardType: TextInputType.number,
       ),
-      HseInputType.dropdown || HseInputType.option => AppDropdown(
+      HseInputType.dropdown ||
+      HseInputType.option ||
+      HseInputType.optionWithIntegerM3 => AppDropdown(
         controlName: controlName,
         label: definition.label,
         options: definition.options,

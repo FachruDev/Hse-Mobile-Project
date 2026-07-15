@@ -10,6 +10,11 @@ void main() {
       HseInputType.parse('duration_minutes'),
       HseInputType.durationMinutes,
     );
+    expect(HseInputType.parse('percentage'), HseInputType.percentage);
+    expect(
+      HseInputType.parse('option_with_integer_m3'),
+      HseInputType.optionWithIntegerM3,
+    );
     expect(HseInputType.parse('option'), HseInputType.option);
     expect(HseInputType.parse('select'), HseInputType.dropdown);
     expect(HseInputType.parse('option_standard'), HseInputType.optionStandard);

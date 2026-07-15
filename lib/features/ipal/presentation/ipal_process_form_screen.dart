@@ -60,6 +60,12 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   @override
   Widget build(BuildContext context) {
     final masterState = ref.watch(ipalProcessMasterProvider);
+    final processReferences = ref
+        .watch(ipalProcessReferencesProvider)
+        .maybeWhen(
+          data: (references) => references,
+          orElse: () => const <String, IpalProcessReference>{},
+        );
 
     return HseAppScaffold(
       title: 'Form IPAL',
@@ -84,6 +90,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
               child: _buildResponsiveForm(
                 template: template,
                 batchSections: batchSections,
+                processReferences: processReferences,
               ),
             );
           },
@@ -95,6 +102,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   Widget _buildResponsiveForm({
     required IpalProcessTemplate template,
     required List<IpalProcessSection> batchSections,
+    required Map<String, IpalProcessReference> processReferences,
   }) {
     final summary = _ProcessCompletionSummary(
       template: template,
@@ -153,7 +161,10 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                   const SizedBox(height: 16),
                   const _SubmitNotice(),
                   const SizedBox(height: 16),
-                  ..._processSectionCards(template.sections),
+                  ..._processSectionCards(
+                    template.sections,
+                    references: processReferences,
+                  ),
                   batchCard,
                   const SizedBox(height: 20),
                   actions,
@@ -213,13 +224,17 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                           values: _processValues,
                           notes: _processNotes,
                           attachmentPaths: _processAttachmentPaths,
+                          references: processReferences,
                           onValueChanged: _setProcessValue,
                           onNoteChanged: _setProcessNote,
                           onPickAttachment: _pickProcessAttachment,
                           onRemoveAttachment: _removeProcessAttachment,
                         )
                       else
-                        ..._processSectionCards(template.sections),
+                        ..._processSectionCards(
+                          template.sections,
+                          references: processReferences,
+                        ),
                       batchCard,
                     ],
                   ),
@@ -233,7 +248,11 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     );
   }
 
-  List<Widget> _processSectionCards(List<IpalProcessSection> sections) {
+  List<Widget> _processSectionCards(
+    List<IpalProcessSection> sections, {
+    Map<String, IpalProcessReference> references =
+        const <String, IpalProcessReference>{},
+  }) {
     return [
       for (final section in sections) ...[
         _ProcessSectionCard(
@@ -242,6 +261,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
           values: _processValues,
           notes: _processNotes,
           attachmentPaths: _processAttachmentPaths,
+          references: references,
           onValueChanged: _setProcessValue,
           onNoteChanged: _setProcessNote,
           onPickAttachment: _pickProcessAttachment,
@@ -915,6 +935,7 @@ class _ProcessTwoColumnGrid extends StatelessWidget {
     required this.values,
     required this.notes,
     required this.attachmentPaths,
+    required this.references,
     required this.onValueChanged,
     required this.onNoteChanged,
     required this.onPickAttachment,
@@ -926,6 +947,7 @@ class _ProcessTwoColumnGrid extends StatelessWidget {
   final Map<String, String> values;
   final Map<String, String> notes;
   final Map<String, String> attachmentPaths;
+  final Map<String, IpalProcessReference> references;
   final void Function(int itemId, String value) onValueChanged;
   final void Function(int itemId, String value) onNoteChanged;
   final Future<void> Function(int itemId, ImageSource source) onPickAttachment;
@@ -956,6 +978,7 @@ class _ProcessTwoColumnGrid extends StatelessWidget {
                       values: values,
                       notes: notes,
                       attachmentPaths: attachmentPaths,
+                      references: references,
                       onValueChanged: onValueChanged,
                       onNoteChanged: onNoteChanged,
                       onPickAttachment: onPickAttachment,
@@ -978,6 +1001,7 @@ class _ProcessSectionCard extends StatelessWidget {
     required this.values,
     required this.notes,
     required this.attachmentPaths,
+    required this.references,
     required this.onValueChanged,
     required this.onNoteChanged,
     required this.onPickAttachment,
@@ -989,6 +1013,7 @@ class _ProcessSectionCard extends StatelessWidget {
   final Map<String, String> values;
   final Map<String, String> notes;
   final Map<String, String> attachmentPaths;
+  final Map<String, IpalProcessReference> references;
   final void Function(int itemId, String value) onValueChanged;
   final void Function(int itemId, String value) onNoteChanged;
   final Future<void> Function(int itemId, ImageSource source) onPickAttachment;
@@ -1010,6 +1035,7 @@ class _ProcessSectionCard extends StatelessWidget {
                 value: values[item.id.toString()],
                 note: notes[item.id.toString()],
                 attachmentPath: attachmentPaths[item.id.toString()],
+                reference: item.code == null ? null : references[item.code],
                 onValueChanged: (value) => onValueChanged(item.id, value),
                 onNoteChanged: (value) => onNoteChanged(item.id, value),
                 onPickGallery: () =>
@@ -1221,6 +1247,7 @@ class _DynamicProcessField extends StatefulWidget {
     this.onPickGallery,
     this.onPickCamera,
     this.onRemoveAttachment,
+    this.reference,
   });
 
   final IpalProcessItem item;
@@ -1232,6 +1259,7 @@ class _DynamicProcessField extends StatefulWidget {
   final VoidCallback? onPickGallery;
   final VoidCallback? onPickCamera;
   final VoidCallback? onRemoveAttachment;
+  final IpalProcessReference? reference;
 
   @override
   State<_DynamicProcessField> createState() => _DynamicProcessFieldState();
@@ -1239,6 +1267,7 @@ class _DynamicProcessField extends StatefulWidget {
 
 class _DynamicProcessFieldState extends State<_DynamicProcessField> {
   late final TextEditingController _manualController;
+  late final TextEditingController _m3Controller;
   late bool _isManual;
 
   @override
@@ -1247,6 +1276,9 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
     _isManual = _shouldUseManual(widget.value);
     _manualController = TextEditingController(
       text: _isManual ? widget.value : null,
+    );
+    _m3Controller = TextEditingController(
+      text: optionWithIntegerM3Number(widget.value) ?? '',
     );
   }
 
@@ -1258,12 +1290,19 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
       if (_isManual && _manualController.text != widget.value) {
         _manualController.text = widget.value ?? '';
       }
+      if (widget.item.inputType == HseInputType.optionWithIntegerM3) {
+        final nextNumber = optionWithIntegerM3Number(widget.value) ?? '';
+        if (_m3Controller.text != nextNumber) {
+          _m3Controller.text = nextNumber;
+        }
+      }
     }
   }
 
   @override
   void dispose() {
     _manualController.dispose();
+    _m3Controller.dispose();
     super.dispose();
   }
 
@@ -1289,6 +1328,8 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
             );
             final inputs = _ProcessInputs(
               actualField: _buildActualField(),
+              reference: widget.reference,
+              currentValue: widget.value,
               note: widget.note,
               onNoteChanged: widget.onNoteChanged,
               attachmentPath: widget.attachmentPath,
@@ -1344,9 +1385,36 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
         validatorMessage: 'Isi durasi menit yang valid.',
         integerOnly: true,
       ),
+      HseInputType.percentage => _buildNumberField(
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        inputFormatters: [_DecimalTextInputFormatter(decimalRange: 2)],
+        labelText: 'Kondisi aktual (%)',
+        placeholder: '0 - 100',
+        validatorMessage: 'Isi persentase 0 sampai 100.',
+        minValue: 0,
+        maxValue: 100,
+        suffixText: '%',
+      ),
       HseInputType.option => _StandardToggle(
         value: widget.value,
         onChanged: widget.onValueChanged,
+      ),
+      HseInputType.optionWithIntegerM3 => _StandardWithIntegerM3Field(
+        value: optionWithIntegerM3Option(widget.value),
+        controller: _m3Controller,
+        onOptionChanged: (option) {
+          widget.onValueChanged(
+            encodeOptionWithIntegerM3Value(option, _m3Controller.text),
+          );
+        },
+        onNumberChanged: (number) {
+          widget.onValueChanged(
+            encodeOptionWithIntegerM3Value(
+              optionWithIntegerM3Option(widget.value) ?? '',
+              number,
+            ),
+          );
+        },
       ),
       HseInputType.optionWithManual => _StandardWithManualToggle(
         value: widget.value,
@@ -1391,6 +1459,9 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
     required String placeholder,
     required String validatorMessage,
     bool integerOnly = false,
+    num? minValue,
+    num? maxValue,
+    String? suffixText,
   }) {
     return TextFormField(
       initialValue: widget.value,
@@ -1400,6 +1471,7 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
         labelText: labelText,
         hintText: placeholder,
         prefixIcon: const Icon(Icons.pin_outlined),
+        suffixText: suffixText,
       ),
       validator: (input) {
         final text = input?.trim() ?? '';
@@ -1407,7 +1479,13 @@ class _DynamicProcessFieldState extends State<_DynamicProcessField> {
         if (integerOnly && int.tryParse(text) == null) {
           return validatorMessage;
         }
-        if (!integerOnly && num.tryParse(text) == null) {
+        final number = num.tryParse(text);
+        if (!integerOnly && number == null) {
+          return validatorMessage;
+        }
+        if (number != null &&
+            ((minValue != null && number < minValue) ||
+                (maxValue != null && number > maxValue))) {
           return validatorMessage;
         }
         return null;
@@ -1473,6 +1551,51 @@ class _StandardToggle extends StatelessWidget {
         ),
       ],
       onChanged: onChanged,
+    );
+  }
+}
+
+class _StandardWithIntegerM3Field extends StatelessWidget {
+  const _StandardWithIntegerM3Field({
+    required this.value,
+    required this.controller,
+    required this.onOptionChanged,
+    required this.onNumberChanged,
+  });
+
+  final String? value;
+  final TextEditingController controller;
+  final ValueChanged<String> onOptionChanged;
+  final ValueChanged<String> onNumberChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedValue = value?.trim().isEmpty == true ? null : value;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _StandardToggle(value: selectedValue, onChanged: onOptionChanged),
+        const SizedBox(height: 10),
+        TextFormField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(
+            labelText: 'Angka debit',
+            hintText: 'Opsional',
+            prefixIcon: Icon(Icons.speed_outlined),
+            suffixText: 'm3',
+          ),
+          validator: (input) {
+            final text = input?.trim() ?? '';
+            if (text.isEmpty) return null;
+            if (int.tryParse(text) == null) return 'Isi angka m3 yang valid.';
+            return null;
+          },
+          onChanged: onNumberChanged,
+        ),
+      ],
     );
   }
 }
@@ -1582,6 +1705,8 @@ class _ProcessDescription extends StatelessWidget {
 class _ProcessInputs extends StatelessWidget {
   const _ProcessInputs({
     required this.actualField,
+    required this.reference,
+    required this.currentValue,
     required this.note,
     required this.onNoteChanged,
     required this.attachmentPath,
@@ -1592,6 +1717,8 @@ class _ProcessInputs extends StatelessWidget {
   });
 
   final Widget actualField;
+  final IpalProcessReference? reference;
+  final String? currentValue;
   final String? note;
   final ValueChanged<String> onNoteChanged;
   final String? attachmentPath;
@@ -1611,6 +1738,13 @@ class _ProcessInputs extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         actualField,
+        if (reference != null) ...[
+          const SizedBox(height: 10),
+          _ProcessReferenceBox(
+            reference: reference!,
+            currentValue: currentValue,
+          ),
+        ],
         const SizedBox(height: 12),
         const _FieldLabel(icon: Icons.comment_outlined, label: 'Keterangan'),
         const SizedBox(height: 8),
@@ -1636,6 +1770,69 @@ class _ProcessInputs extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ProcessReferenceBox extends StatelessWidget {
+  const _ProcessReferenceBox({
+    required this.reference,
+    required this.currentValue,
+  });
+
+  final IpalProcessReference reference;
+  final String? currentValue;
+
+  @override
+  Widget build(BuildContext context) {
+    final currentNumber =
+        num.tryParse(currentValue?.trim() ?? '') ??
+        num.tryParse(optionWithIntegerM3Number(currentValue) ?? '');
+    final delta = currentNumber != null && reference.number != null
+        ? currentNumber - reference.number!
+        : null;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Icons.history_outlined,
+                  size: 16,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Data sebelumnya (${reference.date})',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text('${reference.value} ${reference.unit}'),
+            const SizedBox(height: 4),
+            Text(
+              delta == null
+                  ? 'Selisih: -'
+                  : 'Selisih: ${_formatProcessDelta(delta)} ${reference.unit}',
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1923,4 +2120,10 @@ extension on HseInputType {
       _ => this,
     };
   }
+}
+
+String _formatProcessDelta(num value) {
+  final prefix = value > 0 ? '+' : '';
+  if (value % 1 == 0) return '$prefix${value.toInt()}';
+  return '$prefix${value.toStringAsFixed(2)}';
 }

@@ -51,6 +51,23 @@ class IpalProcessPayloadBuilder {
     final rawValue = values[item.id.toString()]?.trim();
     final note = notes[item.id.toString()]?.trim();
     final attachmentPath = attachmentPaths[item.id.toString()]?.trim();
+    if (item.inputType == HseInputType.optionWithIntegerM3) {
+      final optionValue = optionWithIntegerM3Option(rawValue);
+      final numberValue = optionWithIntegerM3Number(rawValue);
+
+      return {
+        'item_id': item.id,
+        'value_number': numberValue?.isNotEmpty == true
+            ? num.tryParse(numberValue!)
+            : null,
+        'value_text': optionValue?.isNotEmpty == true ? optionValue : null,
+        'note': note?.isNotEmpty == true ? note : null,
+        'attachment_path': attachmentPath?.isNotEmpty == true
+            ? attachmentPath
+            : null,
+      };
+    }
+
     final isNumber = item.inputType.storesNumber;
 
     return {
@@ -67,13 +84,44 @@ class IpalProcessPayloadBuilder {
   }
 }
 
+String encodeOptionWithIntegerM3Value(String option, String number) {
+  final normalizedOption = option.trim();
+  final normalizedNumber = number.trim();
+  if (normalizedOption.isEmpty && normalizedNumber.isEmpty) return '';
+
+  return '$normalizedOption|$normalizedNumber';
+}
+
+String? optionWithIntegerM3Option(String? rawValue) {
+  final text = rawValue?.trim();
+  if (text == null || text.isEmpty) return null;
+
+  final separatorIndex = text.indexOf('|');
+  if (separatorIndex < 0) return text;
+
+  final option = text.substring(0, separatorIndex).trim();
+  return option.isEmpty ? null : option;
+}
+
+String? optionWithIntegerM3Number(String? rawValue) {
+  final text = rawValue?.trim();
+  if (text == null || text.isEmpty) return null;
+
+  final separatorIndex = text.indexOf('|');
+  if (separatorIndex < 0) return null;
+
+  final number = text.substring(separatorIndex + 1).trim();
+  return number.isEmpty ? null : number;
+}
+
 extension on HseInputType {
   bool get storesNumber {
     return switch (this) {
       HseInputType.number ||
       HseInputType.decimal2 ||
       HseInputType.integer ||
-      HseInputType.durationMinutes => true,
+      HseInputType.durationMinutes ||
+      HseInputType.percentage => true,
       _ => false,
     };
   }
