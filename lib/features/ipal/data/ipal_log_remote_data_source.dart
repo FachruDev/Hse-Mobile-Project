@@ -41,6 +41,13 @@ class IpalLogRemoteDataSource {
     return _apiClient.get<Map<String, dynamic>>('/ipal/logs/$logId');
   }
 
+  Future<Map<String, dynamic>> processReferences({required String date}) {
+    return _apiClient.get<Map<String, dynamic>>(
+      '/ipal/process-references',
+      queryParameters: {'date': date},
+    );
+  }
+
   Future<Map<String, dynamic>> submitLog(int logId) {
     return _apiClient.post<Map<String, dynamic>>('/ipal/logs/$logId/submit');
   }

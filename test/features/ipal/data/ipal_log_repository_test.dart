@@ -61,6 +61,36 @@ void main() {
 
     expect(await repository.detailLog(1), response);
   });
+
+  test('processReferences fallback ke cache saat remote gagal', () async {
+    final remote = _MockIpalLogRemoteDataSource();
+    final repository = IpalLogRepository(
+      remoteDataSource: remote,
+      historyCache: LocalCacheService(_MemoryBox()),
+    );
+    final response = {
+      'data': [
+        {
+          'code': 'water_meter',
+          'previous_date': '2026-07-14',
+          'previous_value': 1500,
+          'unit': 'm3',
+        },
+      ],
+    };
+
+    when(
+      () => remote.processReferences(date: '2026-07-15'),
+    ).thenAnswer((_) async => response);
+
+    expect(await repository.processReferences(date: '2026-07-15'), response);
+
+    when(
+      () => remote.processReferences(date: '2026-07-15'),
+    ).thenThrow(Exception('offline'));
+
+    expect(await repository.processReferences(date: '2026-07-15'), response);
+  });
 }
 
 class _MockIpalLogRemoteDataSource extends Mock

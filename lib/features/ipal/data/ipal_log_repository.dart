@@ -66,6 +66,20 @@ class IpalLogRepository {
     }
   }
 
+  Future<Map<String, dynamic>> processReferences({required String date}) async {
+    final cacheKey = 'ipal_process_references:$date';
+
+    try {
+      final response = await _remoteDataSource.processReferences(date: date);
+      await _historyCache.writeFreshJson(cacheKey, response);
+      return response;
+    } catch (_) {
+      final cached = _historyCache.readJsonMap(cacheKey);
+      if (cached == null) rethrow;
+      return cached;
+    }
+  }
+
   Future<Map<String, dynamic>> submitLog(int logId) {
     return _remoteDataSource.submitLog(logId);
   }
