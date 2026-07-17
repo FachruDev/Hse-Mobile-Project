@@ -1785,6 +1785,10 @@ class _ProcessReferenceBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final referenceLabel = [
+      reference.section,
+      reference.name,
+    ].where((value) => value.trim().isNotEmpty).join(' - ');
     final currentNumber =
         num.tryParse(currentValue?.trim() ?? '') ??
         num.tryParse(optionWithIntegerM3Number(currentValue) ?? '');
@@ -1820,7 +1824,17 @@ class _ProcessReferenceBox extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 6),
-            Text('${reference.value} ${reference.unit}'),
+            if (referenceLabel.isNotEmpty) ...[
+              Text(
+                referenceLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+            ],
+            Text(reference.value),
             const SizedBox(height: 4),
             Text(
               delta == null

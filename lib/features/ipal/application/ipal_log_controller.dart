@@ -88,11 +88,17 @@ Future<Map<String, IpalProcessReference>> ipalProcessReferences(Ref ref) async {
     if (unit == null) continue;
 
     final number = _numValue(row['previous_value']);
-    if (number == null) continue;
+    final value = textValue(
+      row['previous_display'],
+      fallback: number == null ? '-' : _formatReferenceNumber(number),
+    );
 
     references[code] = IpalProcessReference(
+      code: code,
+      section: textValue(row['section'], fallback: ''),
+      name: textValue(row['name'], fallback: ''),
       date: textValue(row['previous_date'], fallback: '-'),
-      value: _formatReferenceNumber(number),
+      value: value,
       number: number,
       unit: unit,
     );
@@ -109,12 +115,18 @@ String _dateText(DateTime date) {
 
 class IpalProcessReference {
   const IpalProcessReference({
+    required this.code,
+    required this.section,
+    required this.name,
     required this.date,
     required this.value,
     required this.unit,
     this.number,
   });
 
+  final String code;
+  final String section;
+  final String name;
   final String date;
   final String value;
   final String unit;
