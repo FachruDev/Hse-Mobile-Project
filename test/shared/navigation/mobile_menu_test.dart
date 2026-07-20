@@ -28,4 +28,23 @@ void main() {
     expect(items, isNot(contains('/form/ipal/checklist')));
     expect(items, isNot(contains('/riwayat/ipal')));
   });
+
+  test('IPAL operator sees IPAL form menu with create permission only', () {
+    const user = AppUser(
+      id: 2,
+      userId: 'hermawan',
+      email: 'hermawan@example.test',
+      name: 'Hermawan',
+      permissions: [AppPermissions.ipalLogsCreate, AppPermissions.ipalLogsView],
+    );
+
+    final items = visibleMobileMenuSections(user)
+        .expand((section) => section.items)
+        .map((item) => item.path)
+        .toList(growable: false);
+
+    expect(items, contains('/form/ipal/proses'));
+    expect(items, contains('/form/ipal/checklist'));
+    expect(items, contains('/riwayat/ipal'));
+  });
 }

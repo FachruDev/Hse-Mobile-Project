@@ -46,21 +46,14 @@ const mobileMenuSections = <MobileMenuSection>[
         subtitle: 'Proses harian dan batch mixing',
         path: '/form/ipal/proses',
         icon: Icons.fact_check_outlined,
-        requiredAll: [
-          AppPermissions.masterProcessView,
-          AppPermissions.masterBatchView,
-          AppPermissions.ipalLogsCreate,
-        ],
+        requiredAll: [AppPermissions.ipalLogsCreate],
       ),
       MobileMenuItem(
         title: 'Checklist Harian',
         subtitle: 'Status unit dan pemeriksaan harian',
         path: '/form/ipal/checklist',
         icon: Icons.checklist_outlined,
-        requiredAll: [
-          AppPermissions.masterChecklistView,
-          AppPermissions.ipalLogsCreate,
-        ],
+        requiredAll: [AppPermissions.ipalLogsCreate],
       ),
       MobileMenuItem(
         title: 'Penyimpanan Limbah B3',

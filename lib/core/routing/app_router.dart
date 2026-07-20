@@ -23,14 +23,10 @@ final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 const _routePermissions = <String, _RoutePermissionRequirement>{
   '/form/ipal/proses': _RoutePermissionRequirement(
-    all: [
-      AppPermissions.masterProcessView,
-      AppPermissions.masterBatchView,
-      AppPermissions.ipalLogsCreate,
-    ],
+    all: [AppPermissions.ipalLogsCreate],
   ),
   '/form/ipal/checklist': _RoutePermissionRequirement(
-    all: [AppPermissions.masterChecklistView, AppPermissions.ipalLogsCreate],
+    all: [AppPermissions.ipalLogsCreate],
   ),
   '/form/b3': _RoutePermissionRequirement(
     all: [
