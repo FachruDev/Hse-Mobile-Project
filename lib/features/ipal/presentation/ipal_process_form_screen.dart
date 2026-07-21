@@ -22,6 +22,7 @@ import '../domain/services/ipal_checklist_payload_builder.dart';
 import '../domain/services/ipal_log_payload_builder.dart';
 import '../domain/services/ipal_process_payload_builder.dart';
 import '../../sync/presentation/widgets/submit_queue_status_banner.dart';
+import 'widgets/ipal_android_scrollbar.dart';
 import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
 import 'widgets/ipal_today_log_guard.dart';
@@ -136,40 +137,43 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
         if (!useWideLayout) {
           return Stack(
             children: [
-              ListView(
+              IpalAndroidScrollbar(
                 controller: _scrollController,
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
+                child: ListView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const IpalFormTabs(selected: IpalFormTab.process),
+                    const SizedBox(height: 16),
+                    const _FormTitleCard(
+                      title: 'Catatan Proses IPAL',
+                      icon: Icons.fact_check_outlined,
+                    ),
+                    const SizedBox(height: 12),
+                    const SubmitQueueStatusBanner(
+                      endpoints: {'/ipal/logs'},
+                      compact: true,
+                    ),
+                    const SizedBox(height: 12),
+                    summary,
+                    const SizedBox(height: 16),
+                    const _SubmitNotice(),
+                    const SizedBox(height: 16),
+                    ..._processSectionCards(
+                      template.sections,
+                      references: processReferences,
+                    ),
+                    batchCard,
+                    const SizedBox(height: 20),
+                    actions,
+                    const SizedBox(height: 96),
+                  ],
                 ),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  const IpalFormTabs(selected: IpalFormTab.process),
-                  const SizedBox(height: 16),
-                  const _FormTitleCard(
-                    title: 'Catatan Proses IPAL',
-                    icon: Icons.fact_check_outlined,
-                  ),
-                  const SizedBox(height: 12),
-                  const SubmitQueueStatusBanner(
-                    endpoints: {'/ipal/logs'},
-                    compact: true,
-                  ),
-                  const SizedBox(height: 12),
-                  summary,
-                  const SizedBox(height: 16),
-                  const _SubmitNotice(),
-                  const SizedBox(height: 16),
-                  ..._processSectionCards(
-                    template.sections,
-                    references: processReferences,
-                  ),
-                  batchCard,
-                  const SizedBox(height: 20),
-                  actions,
-                  const SizedBox(height: 96),
-                ],
               ),
               IpalFloatingScrollControls(controller: _scrollController),
             ],
@@ -208,35 +212,39 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(
-                  child: ListView(
+                  child: IpalAndroidScrollbar(
                     controller: _scrollController,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
+                    alwaysVisible: true,
+                    child: ListView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 24, 96),
+                      children: [
+                        if (useTwoColumns)
+                          _ProcessTwoColumnGrid(
+                            sections: template.sections,
+                            fieldRevision: _fieldRevision,
+                            values: _processValues,
+                            notes: _processNotes,
+                            attachmentPaths: _processAttachmentPaths,
+                            references: processReferences,
+                            onValueChanged: _setProcessValue,
+                            onNoteChanged: _setProcessNote,
+                            onPickAttachment: _pickProcessAttachment,
+                            onRemoveAttachment: _removeProcessAttachment,
+                          )
+                        else
+                          ..._processSectionCards(
+                            template.sections,
+                            references: processReferences,
+                          ),
+                        batchCard,
+                      ],
                     ),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                    children: [
-                      if (useTwoColumns)
-                        _ProcessTwoColumnGrid(
-                          sections: template.sections,
-                          fieldRevision: _fieldRevision,
-                          values: _processValues,
-                          notes: _processNotes,
-                          attachmentPaths: _processAttachmentPaths,
-                          references: processReferences,
-                          onValueChanged: _setProcessValue,
-                          onNoteChanged: _setProcessNote,
-                          onPickAttachment: _pickProcessAttachment,
-                          onRemoveAttachment: _removeProcessAttachment,
-                        )
-                      else
-                        ..._processSectionCards(
-                          template.sections,
-                          references: processReferences,
-                        ),
-                      batchCard,
-                    ],
                   ),
                 ),
               ],

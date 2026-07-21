@@ -10,6 +10,7 @@ import '../application/ipal_checklist_master_controller.dart';
 import '../data/ipal_checklist_repository_impl.dart';
 import '../domain/entities/ipal_checklist_draft.dart';
 import '../domain/entities/ipal_checklist_master.dart';
+import 'widgets/ipal_android_scrollbar.dart';
 import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
 import 'widgets/ipal_today_log_guard.dart';
@@ -102,29 +103,32 @@ class _IpalChecklistFormScreenState
         if (!useWideLayout) {
           return Stack(
             children: [
-              ListView(
+              IpalAndroidScrollbar(
                 controller: _scrollController,
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  const IpalFormTabs(selected: IpalFormTab.checklist),
-                  const SizedBox(height: 16),
-                  const _FormTitleCard(
-                    title: 'Checklist Harian',
-                    icon: Icons.checklist_outlined,
+                child: ListView(
+                  controller: _scrollController,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
                   ),
-                  const SizedBox(height: 12),
-                  summary,
-                  const SizedBox(height: 16),
-                  ..._checklistCards(groupedItems),
-                  const SizedBox(height: 8),
-                  actions,
-                  const SizedBox(height: 96),
-                ],
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const IpalFormTabs(selected: IpalFormTab.checklist),
+                    const SizedBox(height: 16),
+                    const _FormTitleCard(
+                      title: 'Checklist Harian',
+                      icon: Icons.checklist_outlined,
+                    ),
+                    const SizedBox(height: 12),
+                    summary,
+                    const SizedBox(height: 16),
+                    ..._checklistCards(groupedItems),
+                    const SizedBox(height: 8),
+                    actions,
+                    const SizedBox(height: 96),
+                  ],
+                ),
               ),
               IpalFloatingScrollControls(controller: _scrollController),
             ],
@@ -156,30 +160,36 @@ class _IpalChecklistFormScreenState
                 ),
                 const VerticalDivider(width: 1),
                 Expanded(
-                  child: ListView(
+                  child: IpalAndroidScrollbar(
                     controller: _scrollController,
-                    physics: const BouncingScrollPhysics(
-                      parent: AlwaysScrollableScrollPhysics(),
+                    alwaysVisible: true,
+                    child: ListView(
+                      controller: _scrollController,
+                      physics: const BouncingScrollPhysics(
+                        parent: AlwaysScrollableScrollPhysics(),
+                      ),
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: const EdgeInsets.fromLTRB(16, 16, 24, 96),
+                      children: [
+                        if (useTwoColumns)
+                          _ChecklistTwoColumnGrid(
+                            entries: groupedItems.entries.toList(
+                              growable: false,
+                            ),
+                            fieldRevision: _fieldRevision,
+                            statuses: _statuses,
+                            notes: _notes,
+                            attachmentPaths: _attachmentPaths,
+                            onStatusChanged: _setStatus,
+                            onNoteChanged: _setNote,
+                            onPickAttachment: _pickAttachment,
+                            onRemoveAttachment: _removeAttachment,
+                          )
+                        else
+                          ..._checklistCards(groupedItems),
+                      ],
                     ),
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                    children: [
-                      if (useTwoColumns)
-                        _ChecklistTwoColumnGrid(
-                          entries: groupedItems.entries.toList(growable: false),
-                          fieldRevision: _fieldRevision,
-                          statuses: _statuses,
-                          notes: _notes,
-                          attachmentPaths: _attachmentPaths,
-                          onStatusChanged: _setStatus,
-                          onNoteChanged: _setNote,
-                          onPickAttachment: _pickAttachment,
-                          onRemoveAttachment: _removeAttachment,
-                        )
-                      else
-                        ..._checklistCards(groupedItems),
-                    ],
                   ),
                 ),
               ],
