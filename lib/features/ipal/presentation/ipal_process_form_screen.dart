@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -29,7 +32,9 @@ import 'widgets/ipal_today_log_guard.dart';
 import 'widgets/ipal_value_toggle.dart';
 
 class IpalProcessFormScreen extends ConsumerStatefulWidget {
-  const IpalProcessFormScreen({super.key});
+  const IpalProcessFormScreen({this.queueItemId, super.key});
+
+  final String? queueItemId;
 
   @override
   ConsumerState<IpalProcessFormScreen> createState() =>
@@ -53,8 +58,24 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   bool _submitting = false;
   int _fieldRevision = 0;
 
+  bool get _isQueueEdit => widget.queueItemId?.isNotEmpty == true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final queueItemId = widget.queueItemId;
+    if (queueItemId != null) {
+      unawaited(_prepareQueueEdit(queueItemId));
+    }
+  }
+
   @override
   void dispose() {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId != null) {
+      unawaited(ref.read(submitQueueServiceProvider).unlockItem(queueItemId));
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -64,7 +85,9 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     final masterState = ref.watch(ipalProcessMasterProvider);
     final selectedDate = ref.watch(ipalSelectedDateProvider);
     final selectedDateLabel = _dateFormat.format(selectedDate);
-    final existingLog = ref.watch(ipalTodayLogProvider).value;
+    final existingLog = _isQueueEdit
+        ? null
+        : ref.watch(ipalTodayLogProvider).value;
     final existingLogId = _intValue(existingLog?['id']);
     final existingDetailState = existingLogId == null
         ? null
@@ -77,17 +100,11 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
         );
 
     return HseAppScaffold(
-      title: 'Form IPAL',
-      selectedPath: '/form/ipal/proses',
+      title: _isQueueEdit ? 'Edit Antrean IPAL' : 'Form IPAL',
+      selectedPath: _isQueueEdit ? '/antrean-submit' : '/form/ipal/proses',
       showBackButton: true,
-      actions: [
-        _SelectedDateButton(
-          label: selectedDateLabel,
-          onPressed: _pickOperationalDate,
-        ),
-      ],
-      body: IpalTodayLogGuard(
-        child: masterState.when(
+      body: _guardedBody(
+        masterState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => _ErrorState(
             message: 'Master catatan proses belum bisa dimuat: $error',
@@ -131,6 +148,21 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     );
   }
 
+  Future<void> _prepareQueueEdit(String queueItemId) async {
+    final item = ref.read(submitQueueServiceProvider).findById(queueItemId);
+    final date = DateTime.tryParse(item?.payload['tanggal']?.toString() ?? '');
+    if (date != null) {
+      ref.read(ipalSelectedDateProvider.notifier).set(date);
+    }
+    await ref.read(submitQueueServiceProvider).lockItem(queueItemId);
+  }
+
+  Widget _guardedBody(Widget child) {
+    if (_isQueueEdit) return child;
+
+    return IpalTodayLogGuard(child: child);
+  }
+
   Widget _buildResponsiveForm({
     required IpalProcessTemplate template,
     required List<IpalProcessSection> batchSections,
@@ -144,9 +176,12 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       batches: _batches,
     );
     final actions = _ActionBar(
+      queueEdit: _isQueueEdit,
       saving: _saving,
       submitting: _submitting,
-      onSaveDraft: () => _saveDraft(template),
+      onSaveDraft: () => _isQueueEdit
+          ? _saveQueue(template, batchSections)
+          : _saveDraft(template),
       onSubmit: () => _confirmSubmitLog(template, batchSections),
       onValidate: () => _validatePayload(template, batchSections),
       onReset: _confirmResetDraft,
@@ -173,25 +208,35 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                 controller: _scrollController,
                 child: ListView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(
+                  physics: const ClampingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const IpalFormTabs(selected: IpalFormTab.process),
-                    const SizedBox(height: 16),
+                    if (!_isQueueEdit) ...[
+                      const IpalFormTabs(selected: IpalFormTab.process),
+                      const SizedBox(height: 16),
+                    ],
                     _FormTitleCard(
                       title: 'Catatan Proses IPAL',
                       icon: Icons.fact_check_outlined,
                       subtitle: selectedDateLabel,
                     ),
                     const SizedBox(height: 12),
-                    const SubmitQueueStatusBanner(
-                      endpoints: {'/ipal/logs'},
-                      compact: true,
+                    _OperationalDateCard(
+                      label: selectedDateLabel,
+                      onPressed: _pickOperationalDate,
                     ),
+                    const SizedBox(height: 12),
+                    if (_isQueueEdit)
+                      const _QueueEditNotice(moduleLabel: 'Proses IPAL')
+                    else
+                      const SubmitQueueStatusBanner(
+                        endpoints: {'/ipal/logs'},
+                        compact: true,
+                      ),
                     const SizedBox(height: 12),
                     summary,
                     const SizedBox(height: 16),
@@ -223,18 +268,28 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
                     children: [
-                      const IpalFormTabs(selected: IpalFormTab.process),
-                      const SizedBox(height: 16),
+                      if (!_isQueueEdit) ...[
+                        const IpalFormTabs(selected: IpalFormTab.process),
+                        const SizedBox(height: 16),
+                      ],
                       _FormTitleCard(
                         title: 'Catatan Proses IPAL',
                         icon: Icons.fact_check_outlined,
                         subtitle: selectedDateLabel,
                       ),
                       const SizedBox(height: 12),
-                      const SubmitQueueStatusBanner(
-                        endpoints: {'/ipal/logs'},
-                        compact: true,
+                      _OperationalDateCard(
+                        label: selectedDateLabel,
+                        onPressed: _pickOperationalDate,
                       ),
+                      const SizedBox(height: 12),
+                      if (_isQueueEdit)
+                        const _QueueEditNotice(moduleLabel: 'Proses IPAL')
+                      else
+                        const SubmitQueueStatusBanner(
+                          endpoints: {'/ipal/logs'},
+                          compact: true,
+                        ),
                       const SizedBox(height: 12),
                       summary,
                       const SizedBox(height: 16),
@@ -251,7 +306,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                     alwaysVisible: true,
                     child: ListView(
                       controller: _scrollController,
-                      physics: const BouncingScrollPhysics(
+                      physics: const ClampingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
                       keyboardDismissBehavior:
@@ -326,6 +381,12 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     _processNotes.clear();
     _processAttachmentPaths.clear();
     _batches.clear();
+
+    if (_isQueueEdit) {
+      _applyQueuePayload();
+      _fieldRevision++;
+      return;
+    }
 
     _applyExistingLog(existingLog);
 
@@ -573,6 +634,10 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       setState(() => _submitting = false);
       if (_canQueue(error)) {
         await _enqueueIpalLog(payload);
+        await checklistRepository.clearDraft();
+        await ref.read(ipalProcessRepositoryProvider).clearDraft();
+        if (!mounted) return;
+        _resetFormState();
         _showMessage(
           'Server belum bisa dijangkau. Log IPAL masuk antrean auto-sync.',
         );
@@ -610,13 +675,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
   Future<void> _resetDraft() async {
     await ref.read(ipalProcessRepositoryProvider).clearDraft();
-    setState(() {
-      _processValues.clear();
-      _processNotes.clear();
-      _processAttachmentPaths.clear();
-      _batches.clear();
-      _fieldRevision++;
-    });
+    _resetFormState();
     if (!mounted) return;
     ScaffoldMessenger.of(
       context,
@@ -635,17 +694,71 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   }
 
   Future<void> _enqueueIpalLog(Map<String, dynamic> payload) {
+    final date = payload['tanggal']?.toString();
+
     return ref
         .read(submitQueueServiceProvider)
-        .enqueue(
+        .upsertIpal(
           SubmitQueueItem(
             id: 'ipal-${DateTime.now().microsecondsSinceEpoch}',
             endpoint: '/ipal/logs',
             method: 'POST',
             payload: payload,
             createdAt: DateTime.now(),
+            moduleLabel: 'Log IPAL',
+            displayDate: date,
           ),
         );
+  }
+
+  Future<void> _saveQueue(
+    IpalProcessTemplate processTemplate,
+    List<IpalProcessSection> batchSections,
+  ) async {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId == null) return;
+    final item = ref.read(submitQueueServiceProvider).findById(queueItemId);
+    if (item == null) {
+      _showMessage('Antrean IPAL tidak ditemukan.');
+      return;
+    }
+
+    final draft = _draftFor(processTemplate);
+    final payload = Map<String, dynamic>.from(item.payload)
+      ..['tanggal'] = _selectedDateLabel
+      ..['process'] = IpalProcessPayloadBuilder.buildProcessPayload(
+        template: processTemplate,
+        draft: draft,
+      )
+      ..['batch'] = IpalProcessPayloadBuilder.buildBatchPayload(
+        batchSections: batchSections,
+        batches: draft.batches,
+      );
+
+    setState(() => _saving = true);
+    await ref
+        .read(submitQueueServiceProvider)
+        .updatePayload(
+          queueItemId,
+          payload,
+          moduleLabel: 'Log IPAL',
+          displayDate: _selectedDateLabel,
+        );
+    if (!mounted) return;
+
+    setState(() => _saving = false);
+    _showMessage('Antrean proses IPAL diperbarui.');
+    context.pop();
+  }
+
+  void _resetFormState() {
+    setState(() {
+      _processValues.clear();
+      _processNotes.clear();
+      _processAttachmentPaths.clear();
+      _batches.clear();
+      _fieldRevision++;
+    });
   }
 
   IpalChecklistTemplate? _selectedChecklistTemplate(
@@ -761,6 +874,89 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     }
   }
 
+  void _applyQueuePayload() {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId == null) return;
+
+    final item = ref.read(submitQueueServiceProvider).findById(queueItemId);
+    final process = _mapValue(item?.payload['process']);
+    if (process != null) {
+      _selectedTemplateId = _intValue(process['template_id']);
+      final values = process['values'];
+      if (values is Iterable) {
+        for (final value in values) {
+          final valueMap = _mapValue(value);
+          if (valueMap == null) continue;
+          final key = valueMap['item_id']?.toString();
+          if (key == null || key.isEmpty) continue;
+
+          final text = valueMap['value_text']?.toString();
+          final number = valueMap['value_number']?.toString();
+          final resolvedValue = (text != null && text.isNotEmpty)
+              ? text
+              : number;
+          if (resolvedValue != null && resolvedValue.isNotEmpty) {
+            _processValues[key] = resolvedValue;
+          }
+
+          final note = valueMap['note']?.toString();
+          if (note != null && note.isNotEmpty) {
+            _processNotes[key] = note;
+          }
+
+          final attachmentPath = valueMap['attachment_path']?.toString();
+          if (attachmentPath != null && attachmentPath.isNotEmpty) {
+            _processAttachmentPaths[key] = attachmentPath;
+          }
+        }
+      }
+    }
+
+    final batches = item?.payload['batch'];
+    if (batches is! Iterable) return;
+
+    for (final batch in batches) {
+      final batchMap = _mapValue(batch);
+      if (batchMap == null) continue;
+      final batchNo = _intValue(batchMap['batch_no']);
+      if (batchNo == null) continue;
+
+      final batchValues = <String, String>{};
+      final batchNotes = <String, String>{};
+      final values = batchMap['values'];
+      if (values is Iterable) {
+        for (final value in values) {
+          final valueMap = _mapValue(value);
+          if (valueMap == null) continue;
+          final key = valueMap['item_id']?.toString();
+          if (key == null || key.isEmpty) continue;
+
+          final text = valueMap['value_text']?.toString();
+          final number = valueMap['value_number']?.toString();
+          final resolvedValue = (text != null && text.isNotEmpty)
+              ? text
+              : number;
+          if (resolvedValue != null && resolvedValue.isNotEmpty) {
+            batchValues[key] = resolvedValue;
+          }
+
+          final note = valueMap['note']?.toString();
+          if (note != null && note.isNotEmpty) {
+            batchNotes[key] = note;
+          }
+        }
+      }
+
+      _batches.add(
+        IpalBatchDraft(
+          batchNo: batchNo,
+          values: batchValues,
+          notes: batchNotes,
+        ),
+      );
+    }
+  }
+
   Future<void> _saveCurrentDraftSilently() async {
     final master = ref.read(ipalProcessMasterProvider).value;
     if (master == null) return;
@@ -812,18 +1008,76 @@ class _FormTitleCard extends StatelessWidget {
   }
 }
 
-class _SelectedDateButton extends StatelessWidget {
-  const _SelectedDateButton({required this.label, required this.onPressed});
+class _OperationalDateCard extends StatelessWidget {
+  const _OperationalDateCard({required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.calendar_today_outlined),
-      label: Text(label),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: AppColors.primaryPastel,
+              child: Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tanggal Operasional',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(label, style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: onPressed,
+              icon: const Icon(Icons.edit_calendar_outlined),
+              label: const Text('Ubah'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QueueEditNotice extends StatelessWidget {
+  const _QueueEditNotice({required this.moduleLabel});
+
+  final String moduleLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.infoPastel,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.cloud_queue_outlined, color: AppColors.info),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Anda sedang mengedit $moduleLabel yang masih menunggu koneksi. Perubahan disimpan kembali ke antrean, belum ke server.',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1853,7 +2107,10 @@ class _ProcessDescription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasStandard = standard?.isNotEmpty == true;
+    final standardText = standard?.trim();
+    final standardLabel = standardText == null || standardText.isEmpty
+        ? 'Belum ada kondisi standar.'
+        : standardText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1870,9 +2127,7 @@ class _ProcessDescription extends StatelessWidget {
           label: 'Kondisi Standar',
         ),
         const SizedBox(height: 6),
-        _StandardConditionBox(
-          standard: hasStandard ? standard! : 'Belum ada kondisi standar.',
-        ),
+        _StandardConditionBox(standard: standardLabel),
       ],
     );
   }
@@ -1905,6 +2160,16 @@ class _ProcessInputs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final reference = this.reference;
+    final onPickGallery = this.onPickGallery;
+    final onPickCamera = this.onPickCamera;
+    final onRemoveAttachment = this.onRemoveAttachment;
+    final canShowAttachment =
+        canAttach &&
+        onPickGallery != null &&
+        onPickCamera != null &&
+        onRemoveAttachment != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1917,7 +2182,7 @@ class _ProcessInputs extends StatelessWidget {
         if (reference != null) ...[
           const SizedBox(height: 10),
           _ProcessReferenceBox(
-            reference: reference!,
+            reference: reference,
             currentValue: currentValue,
           ),
         ],
@@ -1934,15 +2199,15 @@ class _ProcessInputs extends StatelessWidget {
           ),
           onChanged: onNoteChanged,
         ),
-        if (canAttach) ...[
+        if (canShowAttachment) ...[
           const SizedBox(height: 12),
           const _FieldLabel(icon: Icons.photo_camera_outlined, label: 'Foto'),
           const SizedBox(height: 8),
           _ProcessAttachmentPicker(
             attachmentPath: attachmentPath,
-            onPickGallery: onPickGallery!,
-            onPickCamera: onPickCamera!,
-            onRemove: onRemoveAttachment!,
+            onPickGallery: onPickGallery,
+            onPickCamera: onPickCamera,
+            onRemove: onRemoveAttachment,
           ),
         ],
       ],
@@ -2039,11 +2304,15 @@ class _FieldLabel extends StatelessWidget {
       children: [
         Icon(icon, size: 16, color: AppColors.textSecondary),
         const SizedBox(width: 6),
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w700,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              color: AppColors.textSecondary,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ),
       ],
@@ -2166,6 +2435,7 @@ class _ProcessAttachmentPicker extends StatelessWidget {
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
+    required this.queueEdit,
     required this.saving,
     required this.submitting,
     required this.onSaveDraft,
@@ -2174,6 +2444,7 @@ class _ActionBar extends StatelessWidget {
     required this.onReset,
   });
 
+  final bool queueEdit;
   final bool saving;
   final bool submitting;
   final VoidCallback onSaveDraft;
@@ -2194,31 +2465,35 @@ class _ActionBar extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.save_outlined),
-          label: const Text('Simpan Draft Lokal'),
+          label: Text(
+            queueEdit ? 'Simpan Perubahan Antrean' : 'Simpan Draft Lokal',
+          ),
         ),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: saving || submitting ? null : onSubmit,
-          icon: submitting
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.send_outlined),
-          label: const Text('Submit Log IPAL'),
-        ),
-        const SizedBox(height: 10),
-        OutlinedButton.icon(
-          onPressed: saving || submitting ? null : onValidate,
-          icon: const Icon(Icons.rule_outlined),
-          label: const Text('Validasi Catatan Proses'),
-        ),
-        const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: saving || submitting ? null : onReset,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Reset Draft'),
-        ),
+        if (!queueEdit) ...[
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: saving || submitting ? null : onSubmit,
+            icon: submitting
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send_outlined),
+            label: const Text('Submit Log IPAL'),
+          ),
+          const SizedBox(height: 10),
+          OutlinedButton.icon(
+            onPressed: saving || submitting ? null : onValidate,
+            icon: const Icon(Icons.rule_outlined),
+            label: const Text('Validasi Catatan Proses'),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: saving || submitting ? null : onReset,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reset Draft'),
+          ),
+        ],
       ],
     );
   }

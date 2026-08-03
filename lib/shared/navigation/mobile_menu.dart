@@ -71,6 +71,13 @@ const mobileMenuSections = <MobileMenuSection>[
     title: 'Riwayat',
     items: [
       MobileMenuItem(
+        title: 'Antrean Submit',
+        subtitle: 'Data pending menunggu koneksi',
+        path: '/antrean-submit',
+        icon: Icons.cloud_upload_outlined,
+        requiredAll: [],
+      ),
+      MobileMenuItem(
         title: 'Riwayat IPAL',
         subtitle: 'Log harian IPAL',
         path: '/riwayat/ipal',

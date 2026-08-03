@@ -14,6 +14,7 @@ import '../../features/ipal/presentation/ipal_checklist_form_screen.dart';
 import '../../features/ipal/presentation/ipal_log_detail_screen.dart';
 import '../../features/ipal/presentation/ipal_log_list_screen.dart';
 import '../../features/ipal/presentation/ipal_process_form_screen.dart';
+import '../../features/sync/presentation/submit_queue_screen.dart';
 import '../permissions/app_permissions.dart';
 import 'not_authorized_screen.dart';
 import 'splash_screen.dart';
@@ -88,20 +89,20 @@ GoRouter appRouter(Ref ref) {
       final isLogin = path == '/login';
       final isSplash = path == '/splash';
       final session = authState.value;
+      final user = session?.user;
 
       if (authState.isLoading) {
         return isSplash ? null : '/splash';
       }
 
-      if (session == null || !session.isAuthenticated) {
+      if (session == null || !session.isAuthenticated || user == null) {
         return isLogin ? null : '/login';
       }
 
       if (isLogin || isSplash) return '/beranda';
 
       final requiredPermissions = _requiredPermissionsForPath(path);
-      if (requiredPermissions != null &&
-          !requiredPermissions.allows(session.user!)) {
+      if (requiredPermissions != null && !requiredPermissions.allows(user)) {
         return '/tidak-berwenang';
       }
 
@@ -132,6 +133,25 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/form/b3',
         builder: (context, state) => const B3StorageFormScreen(),
+      ),
+      GoRoute(
+        path: '/antrean-submit',
+        builder: (context, state) => const SubmitQueueScreen(),
+      ),
+      GoRoute(
+        path: '/antrean-submit/b3/:id/edit',
+        builder: (context, state) =>
+            B3StorageFormScreen(queueItemId: state.pathParameters['id']),
+      ),
+      GoRoute(
+        path: '/antrean-submit/ipal/:id/checklist/edit',
+        builder: (context, state) =>
+            IpalChecklistFormScreen(queueItemId: state.pathParameters['id']),
+      ),
+      GoRoute(
+        path: '/antrean-submit/ipal/:id/process/edit',
+        builder: (context, state) =>
+            IpalProcessFormScreen(queueItemId: state.pathParameters['id']),
       ),
       GoRoute(
         path: '/riwayat/ipal',

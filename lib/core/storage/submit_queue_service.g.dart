@@ -15,6 +15,9 @@ _SubmitQueueItem _$SubmitQueueItemFromJson(Map<String, dynamic> json) =>
       createdAt: DateTime.parse(json['createdAt'] as String),
       attempts: (json['attempts'] as num?)?.toInt() ?? 0,
       status: json['status'] as String? ?? 'pending',
+      locked: json['locked'] as bool? ?? false,
+      moduleLabel: json['moduleLabel'] as String?,
+      displayDate: json['displayDate'] as String?,
       lastError: json['lastError'] as String?,
     );
 
@@ -27,6 +30,9 @@ Map<String, dynamic> _$SubmitQueueItemToJson(_SubmitQueueItem instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'attempts': instance.attempts,
       'status': instance.status,
+      'locked': instance.locked,
+      'moduleLabel': instance.moduleLabel,
+      'displayDate': instance.displayDate,
       'lastError': instance.lastError,
     };
 

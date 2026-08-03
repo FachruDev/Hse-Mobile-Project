@@ -18,6 +18,34 @@ class SubmitQueueService {
     await _box.put(item.id, JsonStorageCodec.normalize(item.toJson()));
   }
 
+  Future<void> upsertIpal(SubmitQueueItem item) async {
+    final date = item.displayDate ?? item.payload['tanggal']?.toString();
+    final existing = pendingItems().where((pendingItem) {
+      return pendingItem.endpoint == '/ipal/logs' &&
+          (pendingItem.displayDate ??
+                  pendingItem.payload['tanggal']?.toString()) ==
+              date;
+    }).firstOrNull;
+
+    if (existing == null) {
+      await enqueue(item);
+      return;
+    }
+
+    await enqueue(
+      existing.copyWith(
+        payload: item.payload,
+        createdAt: item.createdAt,
+        attempts: 0,
+        status: SubmitQueueStatus.pending.name,
+        lastError: null,
+        moduleLabel: item.moduleLabel,
+        displayDate: item.displayDate,
+        locked: false,
+      ),
+    );
+  }
+
   List<SubmitQueueItem> pendingItems() {
     return _box.values
         .whereType<Map>()
@@ -30,16 +58,64 @@ class SubmitQueueService {
         .toList(growable: false);
   }
 
+  SubmitQueueItem? findById(String id) {
+    final item = JsonStorageCodec.normalizeMap(_box.get(id));
+    if (item == null) return null;
+
+    final queueItem = SubmitQueueItem.fromJson(item);
+    if (queueItem.status == SubmitQueueStatus.done.name) return null;
+
+    return queueItem;
+  }
+
   Future<void> markDone(String id) => _box.delete(id);
+
+  Future<void> deleteItem(String id) => _box.delete(id);
 
   Future<void> markFailed(SubmitQueueItem item, String errorMessage) {
     return enqueue(
       item.copyWith(
+        locked: false,
         status: SubmitQueueStatus.failed.name,
         attempts: item.attempts + 1,
         lastError: errorMessage,
       ),
     );
+  }
+
+  Future<void> updatePayload(
+    String id,
+    Map<String, dynamic> payload, {
+    String? moduleLabel,
+    String? displayDate,
+  }) async {
+    final item = findById(id);
+    if (item == null) return;
+
+    await enqueue(
+      item.copyWith(
+        payload: payload,
+        moduleLabel: moduleLabel ?? item.moduleLabel,
+        displayDate: displayDate ?? item.displayDate,
+        locked: false,
+        status: SubmitQueueStatus.pending.name,
+        lastError: null,
+      ),
+    );
+  }
+
+  Future<void> lockItem(String id) async {
+    final item = findById(id);
+    if (item == null) return;
+
+    await enqueue(item.copyWith(locked: true));
+  }
+
+  Future<void> unlockItem(String id) async {
+    final item = findById(id);
+    if (item == null) return;
+
+    await enqueue(item.copyWith(locked: false));
   }
 }
 
@@ -55,6 +131,9 @@ abstract class SubmitQueueItem with _$SubmitQueueItem {
     required DateTime createdAt,
     @Default(0) int attempts,
     @Default('pending') String status,
+    @Default(false) bool locked,
+    String? moduleLabel,
+    String? displayDate,
     String? lastError,
   }) = _SubmitQueueItem;
 

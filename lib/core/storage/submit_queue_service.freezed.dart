@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$SubmitQueueItem {
 
- String get id; String get endpoint; String get method; Map<String, dynamic> get payload; DateTime get createdAt; int get attempts; String get status; String? get lastError;
+ String get id; String get endpoint; String get method; Map<String, dynamic> get payload; DateTime get createdAt; int get attempts; String get status; bool get locked; String? get moduleLabel; String? get displayDate; String? get lastError;
 /// Create a copy of SubmitQueueItem
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $SubmitQueueItemCopyWith<SubmitQueueItem> get copyWith => _$SubmitQueueItemCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubmitQueueItem&&(identical(other.id, id) || other.id == id)&&(identical(other.endpoint, endpoint) || other.endpoint == endpoint)&&(identical(other.method, method) || other.method == method)&&const DeepCollectionEquality().equals(other.payload, payload)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.attempts, attempts) || other.attempts == attempts)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SubmitQueueItem&&(identical(other.id, id) || other.id == id)&&(identical(other.endpoint, endpoint) || other.endpoint == endpoint)&&(identical(other.method, method) || other.method == method)&&const DeepCollectionEquality().equals(other.payload, payload)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.attempts, attempts) || other.attempts == attempts)&&(identical(other.status, status) || other.status == status)&&(identical(other.locked, locked) || other.locked == locked)&&(identical(other.moduleLabel, moduleLabel) || other.moduleLabel == moduleLabel)&&(identical(other.displayDate, displayDate) || other.displayDate == displayDate)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,endpoint,method,const DeepCollectionEquality().hash(payload),createdAt,attempts,status,lastError);
+int get hashCode => Object.hash(runtimeType,id,endpoint,method,const DeepCollectionEquality().hash(payload),createdAt,attempts,status,locked,moduleLabel,displayDate,lastError);
 
 @override
 String toString() {
-  return 'SubmitQueueItem(id: $id, endpoint: $endpoint, method: $method, payload: $payload, createdAt: $createdAt, attempts: $attempts, status: $status, lastError: $lastError)';
+  return 'SubmitQueueItem(id: $id, endpoint: $endpoint, method: $method, payload: $payload, createdAt: $createdAt, attempts: $attempts, status: $status, locked: $locked, moduleLabel: $moduleLabel, displayDate: $displayDate, lastError: $lastError)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $SubmitQueueItemCopyWith<$Res>  {
   factory $SubmitQueueItemCopyWith(SubmitQueueItem value, $Res Function(SubmitQueueItem) _then) = _$SubmitQueueItemCopyWithImpl;
 @useResult
 $Res call({
- String id, String endpoint, String method, Map<String, dynamic> payload, DateTime createdAt, int attempts, String status, String? lastError
+ String id, String endpoint, String method, Map<String, dynamic> payload, DateTime createdAt, int attempts, String status, bool locked, String? moduleLabel, String? displayDate, String? lastError
 });
 
 
@@ -65,7 +65,7 @@ class _$SubmitQueueItemCopyWithImpl<$Res>
 
 /// Create a copy of SubmitQueueItem
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? endpoint = null,Object? method = null,Object? payload = null,Object? createdAt = null,Object? attempts = null,Object? status = null,Object? lastError = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? endpoint = null,Object? method = null,Object? payload = null,Object? createdAt = null,Object? attempts = null,Object? status = null,Object? locked = null,Object? moduleLabel = freezed,Object? displayDate = freezed,Object? lastError = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,endpoint: null == endpoint ? _self.endpoint : endpoint // ignore: cast_nullable_to_non_nullable
@@ -74,7 +74,10 @@ as String,payload: null == payload ? _self.payload : payload // ignore: cast_nul
 as Map<String, dynamic>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,attempts: null == attempts ? _self.attempts : attempts // ignore: cast_nullable_to_non_nullable
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
+as String,locked: null == locked ? _self.locked : locked // ignore: cast_nullable_to_non_nullable
+as bool,moduleLabel: freezed == moduleLabel ? _self.moduleLabel : moduleLabel // ignore: cast_nullable_to_non_nullable
+as String?,displayDate: freezed == displayDate ? _self.displayDate : displayDate // ignore: cast_nullable_to_non_nullable
+as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -160,10 +163,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String endpoint,  String method,  Map<String, dynamic> payload,  DateTime createdAt,  int attempts,  String status,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String endpoint,  String method,  Map<String, dynamic> payload,  DateTime createdAt,  int attempts,  String status,  bool locked,  String? moduleLabel,  String? displayDate,  String? lastError)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _SubmitQueueItem() when $default != null:
-return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.createdAt,_that.attempts,_that.status,_that.lastError);case _:
+return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.createdAt,_that.attempts,_that.status,_that.locked,_that.moduleLabel,_that.displayDate,_that.lastError);case _:
   return orElse();
 
 }
@@ -181,10 +184,10 @@ return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.created
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String endpoint,  String method,  Map<String, dynamic> payload,  DateTime createdAt,  int attempts,  String status,  String? lastError)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String endpoint,  String method,  Map<String, dynamic> payload,  DateTime createdAt,  int attempts,  String status,  bool locked,  String? moduleLabel,  String? displayDate,  String? lastError)  $default,) {final _that = this;
 switch (_that) {
 case _SubmitQueueItem():
-return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.createdAt,_that.attempts,_that.status,_that.lastError);case _:
+return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.createdAt,_that.attempts,_that.status,_that.locked,_that.moduleLabel,_that.displayDate,_that.lastError);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -201,10 +204,10 @@ return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.created
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String endpoint,  String method,  Map<String, dynamic> payload,  DateTime createdAt,  int attempts,  String status,  String? lastError)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String endpoint,  String method,  Map<String, dynamic> payload,  DateTime createdAt,  int attempts,  String status,  bool locked,  String? moduleLabel,  String? displayDate,  String? lastError)?  $default,) {final _that = this;
 switch (_that) {
 case _SubmitQueueItem() when $default != null:
-return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.createdAt,_that.attempts,_that.status,_that.lastError);case _:
+return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.createdAt,_that.attempts,_that.status,_that.locked,_that.moduleLabel,_that.displayDate,_that.lastError);case _:
   return null;
 
 }
@@ -216,7 +219,7 @@ return $default(_that.id,_that.endpoint,_that.method,_that.payload,_that.created
 @JsonSerializable()
 
 class _SubmitQueueItem implements SubmitQueueItem {
-  const _SubmitQueueItem({required this.id, required this.endpoint, required this.method, required final  Map<String, dynamic> payload, required this.createdAt, this.attempts = 0, this.status = 'pending', this.lastError}): _payload = payload;
+  const _SubmitQueueItem({required this.id, required this.endpoint, required this.method, required final  Map<String, dynamic> payload, required this.createdAt, this.attempts = 0, this.status = 'pending', this.locked = false, this.moduleLabel, this.displayDate, this.lastError}): _payload = payload;
   factory _SubmitQueueItem.fromJson(Map<String, dynamic> json) => _$SubmitQueueItemFromJson(json);
 
 @override final  String id;
@@ -232,6 +235,9 @@ class _SubmitQueueItem implements SubmitQueueItem {
 @override final  DateTime createdAt;
 @override@JsonKey() final  int attempts;
 @override@JsonKey() final  String status;
+@override@JsonKey() final  bool locked;
+@override final  String? moduleLabel;
+@override final  String? displayDate;
 @override final  String? lastError;
 
 /// Create a copy of SubmitQueueItem
@@ -247,16 +253,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubmitQueueItem&&(identical(other.id, id) || other.id == id)&&(identical(other.endpoint, endpoint) || other.endpoint == endpoint)&&(identical(other.method, method) || other.method == method)&&const DeepCollectionEquality().equals(other._payload, _payload)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.attempts, attempts) || other.attempts == attempts)&&(identical(other.status, status) || other.status == status)&&(identical(other.lastError, lastError) || other.lastError == lastError));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _SubmitQueueItem&&(identical(other.id, id) || other.id == id)&&(identical(other.endpoint, endpoint) || other.endpoint == endpoint)&&(identical(other.method, method) || other.method == method)&&const DeepCollectionEquality().equals(other._payload, _payload)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.attempts, attempts) || other.attempts == attempts)&&(identical(other.status, status) || other.status == status)&&(identical(other.locked, locked) || other.locked == locked)&&(identical(other.moduleLabel, moduleLabel) || other.moduleLabel == moduleLabel)&&(identical(other.displayDate, displayDate) || other.displayDate == displayDate)&&(identical(other.lastError, lastError) || other.lastError == lastError));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,endpoint,method,const DeepCollectionEquality().hash(_payload),createdAt,attempts,status,lastError);
+int get hashCode => Object.hash(runtimeType,id,endpoint,method,const DeepCollectionEquality().hash(_payload),createdAt,attempts,status,locked,moduleLabel,displayDate,lastError);
 
 @override
 String toString() {
-  return 'SubmitQueueItem(id: $id, endpoint: $endpoint, method: $method, payload: $payload, createdAt: $createdAt, attempts: $attempts, status: $status, lastError: $lastError)';
+  return 'SubmitQueueItem(id: $id, endpoint: $endpoint, method: $method, payload: $payload, createdAt: $createdAt, attempts: $attempts, status: $status, locked: $locked, moduleLabel: $moduleLabel, displayDate: $displayDate, lastError: $lastError)';
 }
 
 
@@ -267,7 +273,7 @@ abstract mixin class _$SubmitQueueItemCopyWith<$Res> implements $SubmitQueueItem
   factory _$SubmitQueueItemCopyWith(_SubmitQueueItem value, $Res Function(_SubmitQueueItem) _then) = __$SubmitQueueItemCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String endpoint, String method, Map<String, dynamic> payload, DateTime createdAt, int attempts, String status, String? lastError
+ String id, String endpoint, String method, Map<String, dynamic> payload, DateTime createdAt, int attempts, String status, bool locked, String? moduleLabel, String? displayDate, String? lastError
 });
 
 
@@ -284,7 +290,7 @@ class __$SubmitQueueItemCopyWithImpl<$Res>
 
 /// Create a copy of SubmitQueueItem
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? endpoint = null,Object? method = null,Object? payload = null,Object? createdAt = null,Object? attempts = null,Object? status = null,Object? lastError = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? endpoint = null,Object? method = null,Object? payload = null,Object? createdAt = null,Object? attempts = null,Object? status = null,Object? locked = null,Object? moduleLabel = freezed,Object? displayDate = freezed,Object? lastError = freezed,}) {
   return _then(_SubmitQueueItem(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,endpoint: null == endpoint ? _self.endpoint : endpoint // ignore: cast_nullable_to_non_nullable
@@ -293,7 +299,10 @@ as String,payload: null == payload ? _self._payload : payload // ignore: cast_nu
 as Map<String, dynamic>,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,attempts: null == attempts ? _self.attempts : attempts // ignore: cast_nullable_to_non_nullable
 as int,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as String,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
+as String,locked: null == locked ? _self.locked : locked // ignore: cast_nullable_to_non_nullable
+as bool,moduleLabel: freezed == moduleLabel ? _self.moduleLabel : moduleLabel // ignore: cast_nullable_to_non_nullable
+as String?,displayDate: freezed == displayDate ? _self.displayDate : displayDate // ignore: cast_nullable_to_non_nullable
+as String?,lastError: freezed == lastError ? _self.lastError : lastError // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

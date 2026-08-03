@@ -22,19 +22,34 @@ class SubmitQueueProcessor {
 
   Future<int> retryPending() async {
     var successCount = 0;
-    final items = _queueService.pendingItems();
+    final items = _queueService
+        .pendingItems()
+        .where((item) => !item.locked)
+        .toList(growable: false);
     for (final item in items) {
-      try {
-        await _send(item);
-        await _queueService.markDone(item.id);
+      final sent = await retryItem(item.id);
+      if (sent) {
         successCount++;
-      } on ApiException catch (error) {
-        await _queueService.markFailed(item, error.message);
-      } catch (error) {
-        await _queueService.markFailed(item, error.toString());
       }
     }
     return successCount;
+  }
+
+  Future<bool> retryItem(String id) async {
+    final item = _queueService.findById(id);
+    if (item == null || item.locked) return false;
+
+    try {
+      await _send(item);
+      await _queueService.markDone(item.id);
+      return true;
+    } on ApiException catch (error) {
+      await _queueService.markFailed(item, error.message);
+      return false;
+    } catch (error) {
+      await _queueService.markFailed(item, error.toString());
+      return false;
+    }
   }
 
   Future<void> _send(SubmitQueueItem item) async {

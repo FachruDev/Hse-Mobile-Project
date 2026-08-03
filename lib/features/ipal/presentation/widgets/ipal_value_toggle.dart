@@ -38,8 +38,9 @@ class IpalValueToggle extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
+        child: Wrap(
+          spacing: 2,
+          runSpacing: 2,
           children: [
             for (final option in options)
               _ToggleSegment(

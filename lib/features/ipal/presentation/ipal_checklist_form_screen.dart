@@ -1,9 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../color_config.dart';
+import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../application/ipal_checklist_master_controller.dart';
@@ -11,6 +15,7 @@ import '../application/ipal_log_controller.dart';
 import '../data/ipal_checklist_repository_impl.dart';
 import '../domain/entities/ipal_checklist_draft.dart';
 import '../domain/entities/ipal_checklist_master.dart';
+import '../domain/services/ipal_checklist_payload_builder.dart';
 import 'widgets/ipal_android_scrollbar.dart';
 import 'widgets/ipal_floating_scroll_controls.dart';
 import 'widgets/ipal_form_tabs.dart';
@@ -18,7 +23,9 @@ import 'widgets/ipal_today_log_guard.dart';
 import 'widgets/ipal_value_toggle.dart';
 
 class IpalChecklistFormScreen extends ConsumerStatefulWidget {
-  const IpalChecklistFormScreen({super.key});
+  const IpalChecklistFormScreen({this.queueItemId, super.key});
+
+  final String? queueItemId;
 
   @override
   ConsumerState<IpalChecklistFormScreen> createState() =>
@@ -40,8 +47,24 @@ class _IpalChecklistFormScreenState
   bool _saving = false;
   int _fieldRevision = 0;
 
+  bool get _isQueueEdit => widget.queueItemId?.isNotEmpty == true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final queueItemId = widget.queueItemId;
+    if (queueItemId != null) {
+      unawaited(_prepareQueueEdit(queueItemId));
+    }
+  }
+
   @override
   void dispose() {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId != null) {
+      unawaited(ref.read(submitQueueServiceProvider).unlockItem(queueItemId));
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -51,24 +74,20 @@ class _IpalChecklistFormScreenState
     final templatesState = ref.watch(ipalChecklistTemplatesProvider);
     final selectedDate = ref.watch(ipalSelectedDateProvider);
     final selectedDateLabel = _dateFormat.format(selectedDate);
-    final existingLog = ref.watch(ipalTodayLogProvider).value;
+    final existingLog = _isQueueEdit
+        ? null
+        : ref.watch(ipalTodayLogProvider).value;
     final existingLogId = _intValue(existingLog?['id']);
     final existingDetailState = existingLogId == null
         ? null
         : ref.watch(ipalLogDetailProvider(existingLogId));
 
     return HseAppScaffold(
-      title: 'Form IPAL',
-      selectedPath: '/form/ipal/checklist',
+      title: _isQueueEdit ? 'Edit Antrean IPAL' : 'Form IPAL',
+      selectedPath: _isQueueEdit ? '/antrean-submit' : '/form/ipal/checklist',
       showBackButton: true,
-      actions: [
-        _SelectedDateButton(
-          label: selectedDateLabel,
-          onPressed: _pickOperationalDate,
-        ),
-      ],
-      body: IpalTodayLogGuard(
-        child: templatesState.when(
+      body: _guardedBody(
+        templatesState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, stackTrace) => _ErrorState(
             message: 'Master checklist belum bisa dimuat: $error',
@@ -112,6 +131,21 @@ class _IpalChecklistFormScreenState
     );
   }
 
+  Future<void> _prepareQueueEdit(String queueItemId) async {
+    final item = ref.read(submitQueueServiceProvider).findById(queueItemId);
+    final date = DateTime.tryParse(item?.payload['tanggal']?.toString() ?? '');
+    if (date != null) {
+      ref.read(ipalSelectedDateProvider.notifier).set(date);
+    }
+    await ref.read(submitQueueServiceProvider).lockItem(queueItemId);
+  }
+
+  Widget _guardedBody(Widget child) {
+    if (_isQueueEdit) return child;
+
+    return IpalTodayLogGuard(child: child);
+  }
+
   Widget _buildResponsiveForm({
     required IpalChecklistTemplate template,
     required List<IpalChecklistItem> activeItems,
@@ -123,8 +157,10 @@ class _IpalChecklistFormScreenState
       statuses: _statuses,
     );
     final actions = _ActionBar(
+      queueEdit: _isQueueEdit,
       saving: _saving,
-      onSaveDraft: () => _saveDraft(template),
+      onSaveDraft: () =>
+          _isQueueEdit ? _saveQueue(template) : _saveDraft(template),
       onReset: _confirmResetDraft,
     );
 
@@ -140,21 +176,32 @@ class _IpalChecklistFormScreenState
                 controller: _scrollController,
                 child: ListView(
                   controller: _scrollController,
-                  physics: const BouncingScrollPhysics(
+                  physics: const ClampingScrollPhysics(
                     parent: AlwaysScrollableScrollPhysics(),
                   ),
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.all(16),
                   children: [
-                    const IpalFormTabs(selected: IpalFormTab.checklist),
-                    const SizedBox(height: 16),
+                    if (!_isQueueEdit) ...[
+                      const IpalFormTabs(selected: IpalFormTab.checklist),
+                      const SizedBox(height: 16),
+                    ],
                     _FormTitleCard(
                       title: 'Checklist Harian',
                       icon: Icons.checklist_outlined,
                       subtitle: selectedDateLabel,
                     ),
                     const SizedBox(height: 12),
+                    _OperationalDateCard(
+                      label: selectedDateLabel,
+                      onPressed: _pickOperationalDate,
+                    ),
+                    const SizedBox(height: 12),
+                    if (_isQueueEdit) ...[
+                      const _QueueEditNotice(moduleLabel: 'Checklist IPAL'),
+                      const SizedBox(height: 12),
+                    ],
                     summary,
                     const SizedBox(height: 16),
                     ..._checklistCards(groupedItems),
@@ -179,14 +226,25 @@ class _IpalChecklistFormScreenState
                   child: ListView(
                     padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
                     children: [
-                      const IpalFormTabs(selected: IpalFormTab.checklist),
-                      const SizedBox(height: 16),
+                      if (!_isQueueEdit) ...[
+                        const IpalFormTabs(selected: IpalFormTab.checklist),
+                        const SizedBox(height: 16),
+                      ],
                       _FormTitleCard(
                         title: 'Checklist Harian',
                         icon: Icons.checklist_outlined,
                         subtitle: selectedDateLabel,
                       ),
                       const SizedBox(height: 12),
+                      _OperationalDateCard(
+                        label: selectedDateLabel,
+                        onPressed: _pickOperationalDate,
+                      ),
+                      const SizedBox(height: 12),
+                      if (_isQueueEdit) ...[
+                        const _QueueEditNotice(moduleLabel: 'Checklist IPAL'),
+                        const SizedBox(height: 12),
+                      ],
                       summary,
                       const SizedBox(height: 16),
                       actions,
@@ -200,7 +258,7 @@ class _IpalChecklistFormScreenState
                     alwaysVisible: true,
                     child: ListView(
                       controller: _scrollController,
-                      physics: const BouncingScrollPhysics(
+                      physics: const ClampingScrollPhysics(
                         parent: AlwaysScrollableScrollPhysics(),
                       ),
                       keyboardDismissBehavior:
@@ -269,6 +327,12 @@ class _IpalChecklistFormScreenState
     _statuses.clear();
     _notes.clear();
     _attachmentPaths.clear();
+
+    if (_isQueueEdit) {
+      _applyQueuePayload();
+      _fieldRevision++;
+      return;
+    }
 
     _applyExistingLog(existingLog);
 
@@ -364,6 +428,41 @@ class _IpalChecklistFormScreenState
     _showMessage('Draft checklist berhasil disimpan.');
   }
 
+  Future<void> _saveQueue(IpalChecklistTemplate template) async {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId == null) return;
+
+    setState(() => _saving = true);
+    final service = ref.read(submitQueueServiceProvider);
+    final item = service.findById(queueItemId);
+    if (item == null) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      _showMessage('Antrean IPAL tidak ditemukan.');
+      return;
+    }
+
+    final dateLabel = _selectedDateLabel;
+    final payload = Map<String, dynamic>.from(item.payload)
+      ..['tanggal'] = dateLabel
+      ..['checklist'] = IpalChecklistPayloadBuilder.buildChecklistPayload(
+        template: template,
+        draft: _draftFor(template),
+      );
+
+    await service.updatePayload(
+      queueItemId,
+      payload,
+      moduleLabel: 'Log IPAL',
+      displayDate: dateLabel,
+    );
+    if (!mounted) return;
+
+    setState(() => _saving = false);
+    _showMessage('Antrean checklist IPAL diperbarui.');
+    context.pop();
+  }
+
   Future<void> _resetDraft() async {
     await ref.read(ipalChecklistRepositoryProvider).clearDraft();
     setState(() {
@@ -447,6 +546,41 @@ class _IpalChecklistFormScreenState
       }
     }
   }
+
+  void _applyQueuePayload() {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId == null) return;
+
+    final item = ref.read(submitQueueServiceProvider).findById(queueItemId);
+    final checklist = _mapValue(item?.payload['checklist']);
+    if (checklist == null) return;
+
+    _selectedTemplateId = _intValue(checklist['template_id']);
+    final values = checklist['values'];
+    if (values is! Iterable) return;
+
+    for (final value in values) {
+      final valueMap = _mapValue(value);
+      if (valueMap == null) continue;
+      final key = valueMap['item_id']?.toString();
+      if (key == null || key.isEmpty) continue;
+
+      final status = valueMap['status']?.toString() ?? '';
+      if (status.isNotEmpty) {
+        _statuses[key] = status;
+      }
+
+      final note = valueMap['note']?.toString();
+      if (note != null && note.isNotEmpty) {
+        _notes[key] = note;
+      }
+
+      final attachmentPath = valueMap['attachment_path']?.toString();
+      if (attachmentPath != null && attachmentPath.isNotEmpty) {
+        _attachmentPaths[key] = attachmentPath;
+      }
+    }
+  }
 }
 
 class _FormTitleCard extends StatelessWidget {
@@ -489,18 +623,76 @@ class _FormTitleCard extends StatelessWidget {
   }
 }
 
-class _SelectedDateButton extends StatelessWidget {
-  const _SelectedDateButton({required this.label, required this.onPressed});
+class _OperationalDateCard extends StatelessWidget {
+  const _OperationalDateCard({required this.label, required this.onPressed});
 
   final String label;
   final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.calendar_today_outlined),
-      label: Text(label),
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            const CircleAvatar(
+              backgroundColor: AppColors.primaryPastel,
+              child: Icon(
+                Icons.calendar_today_outlined,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tanggal Operasional',
+                    style: Theme.of(context).textTheme.labelLarge,
+                  ),
+                  const SizedBox(height: 3),
+                  Text(label, style: Theme.of(context).textTheme.titleMedium),
+                ],
+              ),
+            ),
+            OutlinedButton.icon(
+              onPressed: onPressed,
+              icon: const Icon(Icons.edit_calendar_outlined),
+              label: const Text('Ubah'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QueueEditNotice extends StatelessWidget {
+  const _QueueEditNotice({required this.moduleLabel});
+
+  final String moduleLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.infoPastel,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.cloud_queue_outlined, color: AppColors.info),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Anda sedang mengedit $moduleLabel yang masih menunggu koneksi. Perubahan disimpan kembali ke antrean, belum ke server.',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1038,11 +1230,13 @@ class _ChecklistAttachmentPicker extends StatelessWidget {
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
+    required this.queueEdit,
     required this.saving,
     required this.onSaveDraft,
     required this.onReset,
   });
 
+  final bool queueEdit;
   final bool saving;
   final VoidCallback onSaveDraft;
   final VoidCallback onReset;
@@ -1060,14 +1254,18 @@ class _ActionBar extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.save_outlined),
-          label: const Text('Simpan Draft Checklist'),
+          label: Text(
+            queueEdit ? 'Simpan Perubahan Antrean' : 'Simpan Draft Checklist',
+          ),
         ),
-        const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: saving ? null : onReset,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Reset Draft Checklist'),
-        ),
+        if (!queueEdit) ...[
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: saving ? null : onReset,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reset Draft Checklist'),
+          ),
+        ],
       ],
     );
   }

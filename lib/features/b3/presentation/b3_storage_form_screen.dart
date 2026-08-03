@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
@@ -16,7 +19,9 @@ import '../domain/services/b3_storage_payload_builder.dart';
 import '../../sync/presentation/widgets/submit_queue_status_banner.dart';
 
 class B3StorageFormScreen extends ConsumerStatefulWidget {
-  const B3StorageFormScreen({super.key});
+  const B3StorageFormScreen({this.queueItemId, super.key});
+
+  final String? queueItemId;
 
   @override
   ConsumerState<B3StorageFormScreen> createState() =>
@@ -46,8 +51,24 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
   bool _saving = false;
   bool _submitting = false;
 
+  bool get _isQueueEdit => widget.queueItemId?.isNotEmpty == true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final queueItemId = widget.queueItemId;
+    if (queueItemId != null) {
+      unawaited(ref.read(submitQueueServiceProvider).lockItem(queueItemId));
+    }
+  }
+
   @override
   void dispose() {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId != null) {
+      unawaited(ref.read(submitQueueServiceProvider).unlockItem(queueItemId));
+    }
     _weightController.dispose();
     _documentController.dispose();
     _wasteOtherController.dispose();
@@ -61,8 +82,8 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
     final masterState = ref.watch(b3MasterProvider);
 
     return HseAppScaffold(
-      title: 'Penyimpanan Limbah B3',
-      selectedPath: '/form/b3',
+      title: _isQueueEdit ? 'Edit Antrean B3' : 'Penyimpanan Limbah B3',
+      selectedPath: _isQueueEdit ? '/antrean-submit' : '/form/b3',
       showBackButton: true,
       body: masterState.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -77,11 +98,17 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
             child: ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const SubmitQueueStatusBanner(
-                  endpoints: {'/b3-storage/logs'},
-                  compact: true,
-                ),
-                const SizedBox(height: 12),
+                if (!_isQueueEdit) ...[
+                  const SubmitQueueStatusBanner(
+                    endpoints: {'/b3-storage/logs'},
+                    compact: true,
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (_isQueueEdit) ...[
+                  const _QueueEditNotice(moduleLabel: 'B3'),
+                  const SizedBox(height: 12),
+                ],
                 _MovementCard(
                   dateLabel: _dateFormat.format(_movementDate),
                   timeLabel: _formatTime(_movementTime),
@@ -117,9 +144,10 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
                 ),
                 const SizedBox(height: 20),
                 _ActionBar(
+                  queueEdit: _isQueueEdit,
                   saving: _saving,
                   submitting: _submitting,
-                  onSaveDraft: _saveDraft,
+                  onSaveDraft: _isQueueEdit ? _saveQueue : _saveDraft,
                   onSubmit: _confirmSubmit,
                   onReset: _confirmResetDraft,
                 ),
@@ -135,7 +163,9 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
   void _loadDraftOnce() {
     if (_draftLoaded) return;
     _draftLoaded = true;
-    final draft = ref.read(b3StorageRepositoryProvider).readDraft();
+    final draft = _isQueueEdit
+        ? _queueDraft()
+        : ref.read(b3StorageRepositoryProvider).readDraft();
     if (draft == null) return;
 
     _movementDate = DateTime.tryParse(draft.movementDate) ?? DateTime.now();
@@ -222,6 +252,9 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
       setState(() => _submitting = false);
       if (_canQueue(error)) {
         await _enqueueB3Log(draft);
+        await ref.read(b3StorageRepositoryProvider).clearDraft();
+        if (!mounted) return;
+        _resetFormState();
         _showMessage(
           'Koneksi belum stabil. Draft B3 disimpan ke antrean submit.',
         );
@@ -249,19 +282,7 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
 
   Future<void> _resetDraft() async {
     await ref.read(b3StorageRepositoryProvider).clearDraft();
-    setState(() {
-      _movementDate = DateTime.now();
-      _movementTime = TimeOfDay.now();
-      _movementType = 'MASUK';
-      _wasteTypeId = null;
-      _departmentId = null;
-      _photoPath = null;
-      _weightController.clear();
-      _documentController.clear();
-      _wasteOtherController.clear();
-      _initiatorUserNameController.clear();
-      _noteController.clear();
-    });
+    _resetFormState();
     _showMessage('Draft B3 lokal dihapus.');
   }
 
@@ -295,6 +316,60 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
       photoPath: _photoPath,
       note: _noteController.text.trim(),
     );
+  }
+
+  B3StorageDraft? _queueDraft() {
+    final queueItemId = widget.queueItemId;
+    if (queueItemId == null) return null;
+
+    final item = ref.read(submitQueueServiceProvider).findById(queueItemId);
+    if (item == null) return null;
+
+    return B3StorageDraft.fromJson(item.payload);
+  }
+
+  Future<void> _saveQueue() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    final draft = _draft();
+    final errors = B3StoragePayloadBuilder.validate(draft);
+    if (errors.isNotEmpty) {
+      _showMessage(errors.first);
+      return;
+    }
+
+    final queueItemId = widget.queueItemId;
+    if (queueItemId == null) return;
+
+    setState(() => _saving = true);
+    await ref
+        .read(submitQueueServiceProvider)
+        .updatePayload(
+          queueItemId,
+          draft.toJson(),
+          moduleLabel: 'Log B3',
+          displayDate: draft.movementDate,
+        );
+    if (!mounted) return;
+
+    setState(() => _saving = false);
+    _showMessage('Antrean B3 diperbarui.');
+    context.pop();
+  }
+
+  void _resetFormState() {
+    setState(() {
+      _movementDate = DateTime.now();
+      _movementTime = TimeOfDay.now();
+      _movementType = 'MASUK';
+      _wasteTypeId = null;
+      _departmentId = null;
+      _photoPath = null;
+      _weightController.clear();
+      _documentController.clear();
+      _wasteOtherController.clear();
+      _initiatorUserNameController.clear();
+      _noteController.clear();
+    });
   }
 
   String _formatTime(TimeOfDay time) {
@@ -332,6 +407,8 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
             method: 'POST',
             payload: draft.toJson(),
             createdAt: DateTime.now(),
+            moduleLabel: 'Log B3',
+            displayDate: draft.movementDate,
           ),
         );
   }
@@ -664,6 +741,7 @@ class _PhotoCard extends StatelessWidget {
 
 class _ActionBar extends StatelessWidget {
   const _ActionBar({
+    required this.queueEdit,
     required this.saving,
     required this.submitting,
     required this.onSaveDraft,
@@ -671,6 +749,7 @@ class _ActionBar extends StatelessWidget {
     required this.onReset,
   });
 
+  final bool queueEdit;
   final bool saving;
   final bool submitting;
   final VoidCallback onSaveDraft;
@@ -690,26 +769,58 @@ class _ActionBar extends StatelessWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.save_outlined),
-          label: const Text('Simpan Draft B3'),
+          label: Text(
+            queueEdit ? 'Simpan Perubahan Antrean' : 'Simpan Draft B3',
+          ),
         ),
-        const SizedBox(height: 10),
-        FilledButton.icon(
-          onPressed: submitting ? null : onSubmit,
-          icon: submitting
-              ? const SizedBox.square(
-                  dimension: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.send_outlined),
-          label: const Text('Submit Log B3'),
-        ),
-        const SizedBox(height: 10),
-        TextButton.icon(
-          onPressed: submitting ? null : onReset,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Reset Draft B3'),
-        ),
+        if (!queueEdit) ...[
+          const SizedBox(height: 10),
+          FilledButton.icon(
+            onPressed: submitting ? null : onSubmit,
+            icon: submitting
+                ? const SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.send_outlined),
+            label: const Text('Submit Log B3'),
+          ),
+          const SizedBox(height: 10),
+          TextButton.icon(
+            onPressed: submitting ? null : onReset,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reset Draft B3'),
+          ),
+        ],
       ],
+    );
+  }
+}
+
+class _QueueEditNotice extends StatelessWidget {
+  const _QueueEditNotice({required this.moduleLabel});
+
+  final String moduleLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: AppColors.infoPastel,
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.cloud_queue_outlined, color: AppColors.info),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Anda sedang mengedit data $moduleLabel yang masih menunggu koneksi. Perubahan disimpan kembali ke antrean, belum ke server.',
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

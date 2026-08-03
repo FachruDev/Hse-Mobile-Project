@@ -16,7 +16,33 @@ class IpalFloatingScrollControls extends StatefulWidget {
 class _IpalFloatingScrollControlsState
     extends State<IpalFloatingScrollControls> {
   bool _collapsed = false;
+  bool _atTop = true;
+  bool _atBottom = false;
   int _scrollToken = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.controller.addListener(_syncEdgeState);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncEdgeState());
+  }
+
+  @override
+  void didUpdateWidget(IpalFloatingScrollControls oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller == widget.controller) return;
+
+    oldWidget.controller.removeListener(_syncEdgeState);
+    widget.controller.addListener(_syncEdgeState);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncEdgeState());
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_syncEdgeState);
+    _scrollToken++;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -61,8 +87,10 @@ class _IpalFloatingScrollControlsState
                 )
               : _ScrollPill(
                   key: const ValueKey('expanded-scroll-pill'),
-                  onUp: _scrollToTop,
-                  onDown: _scrollToBottom,
+                  canUp: !_atTop,
+                  canDown: !_atBottom,
+                  onUp: _atTop ? null : _scrollToTop,
+                  onDown: _atBottom ? null : _scrollToBottom,
                   onHide: () {
                     HapticFeedback.selectionClick();
                     setState(() => _collapsed = true);
@@ -71,6 +99,20 @@ class _IpalFloatingScrollControlsState
         ),
       ),
     );
+  }
+
+  void _syncEdgeState() {
+    if (!mounted || !widget.controller.hasClients) return;
+
+    final position = widget.controller.position;
+    final atTop = position.pixels <= position.minScrollExtent + 2;
+    final atBottom = position.pixels >= position.maxScrollExtent - 2;
+    if (atTop == _atTop && atBottom == _atBottom) return;
+
+    setState(() {
+      _atTop = atTop;
+      _atBottom = atBottom;
+    });
   }
 
   void _scrollToTop() {
@@ -90,42 +132,63 @@ class _IpalFloatingScrollControlsState
   Future<void> _animateToEdge(double Function() targetResolver) async {
     final token = ++_scrollToken;
 
-    for (var pass = 0; pass < 2; pass++) {
-      if (!mounted || token != _scrollToken || !widget.controller.hasClients) {
-        return;
-      }
+    if (!mounted || !widget.controller.hasClients) return;
 
-      final position = widget.controller.position;
-      final target = targetResolver().clamp(
-        position.minScrollExtent,
-        position.maxScrollExtent,
-      );
-      final current = widget.controller.offset;
-      final distance = (target - current).abs();
-      if (distance < 4) return;
-
-      final milliseconds = (360 + distance * 0.2).clamp(460, 1400).round();
-      await widget.controller.animateTo(
-        target,
-        duration: Duration(milliseconds: milliseconds),
-        curve: Curves.easeInOutCubic,
-      );
-
-      await Future<void>.delayed(const Duration(milliseconds: 48));
+    final position = widget.controller.position;
+    final target = targetResolver().clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    final current = widget.controller.offset.clamp(
+      position.minScrollExtent,
+      position.maxScrollExtent,
+    );
+    final distance = (target - current).abs();
+    if (distance < 2) {
+      _syncEdgeState();
+      return;
     }
+
+    if (widget.controller.offset != current) {
+      widget.controller.jumpTo(current);
+    }
+
+    final milliseconds = (260 + distance * 0.16).clamp(320, 950).round();
+    await widget.controller.animateTo(
+      target,
+      duration: Duration(milliseconds: milliseconds),
+      curve: Curves.easeOutCubic,
+    );
+
+    if (!mounted || token != _scrollToken || !widget.controller.hasClients) {
+      return;
+    }
+
+    final finalTarget = target.clamp(
+      widget.controller.position.minScrollExtent,
+      widget.controller.position.maxScrollExtent,
+    );
+    if ((widget.controller.offset - finalTarget).abs() > 1) {
+      widget.controller.jumpTo(finalTarget);
+    }
+    _syncEdgeState();
   }
 }
 
 class _ScrollPill extends StatelessWidget {
   const _ScrollPill({
+    required this.canUp,
+    required this.canDown,
     required this.onUp,
     required this.onDown,
     required this.onHide,
     super.key,
   });
 
-  final VoidCallback onUp;
-  final VoidCallback onDown;
+  final bool canUp;
+  final bool canDown;
+  final VoidCallback? onUp;
+  final VoidCallback? onDown;
   final VoidCallback onHide;
 
   @override
@@ -150,8 +213,16 @@ class _ScrollPill extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _PillIcon(icon: Icons.keyboard_arrow_up, onTap: onUp),
-            _PillIcon(icon: Icons.keyboard_arrow_down, onTap: onDown),
+            _PillIcon(
+              icon: Icons.keyboard_arrow_up,
+              onTap: onUp,
+              enabled: canUp,
+            ),
+            _PillIcon(
+              icon: Icons.keyboard_arrow_down,
+              onTap: onDown,
+              enabled: canDown,
+            ),
             _PillIcon(icon: Icons.visibility_off_outlined, onTap: onHide),
           ],
         ),
@@ -196,10 +267,15 @@ class _CollapsedHandle extends StatelessWidget {
 }
 
 class _PillIcon extends StatelessWidget {
-  const _PillIcon({required this.icon, required this.onTap});
+  const _PillIcon({
+    required this.icon,
+    required this.onTap,
+    this.enabled = true,
+  });
 
   final IconData icon;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -208,10 +284,14 @@ class _PillIcon extends StatelessWidget {
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
-        onTap: onTap,
+        onTap: enabled ? onTap : null,
         child: Padding(
           padding: const EdgeInsets.all(8),
-          child: Icon(icon, size: 22, color: AppColors.textPrimary),
+          child: Icon(
+            icon,
+            size: 22,
+            color: enabled ? AppColors.textPrimary : AppColors.textSecondary,
+          ),
         ),
       ),
     );
