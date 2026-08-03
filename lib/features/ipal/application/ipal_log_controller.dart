@@ -7,6 +7,19 @@ import '../data/ipal_log_repository.dart';
 
 part 'ipal_log_controller.g.dart';
 
+@Riverpod(keepAlive: true)
+class IpalSelectedDate extends _$IpalSelectedDate {
+  @override
+  DateTime build() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  void set(DateTime date) {
+    state = DateTime(date.year, date.month, date.day);
+  }
+}
+
 @riverpod
 Future<Map<String, dynamic>> ipalLogList(
   Ref ref, {
@@ -31,29 +44,25 @@ Future<Map<String, dynamic>?> ipalTodayLog(Ref ref) async {
   final user = session?.user;
   if (user == null ||
       !user.canAny([
-        AppPermissions.ipalLogsViewOwn,
+        AppPermissions.ipalLogsCreate,
         AppPermissions.ipalLogsViewAll,
         AppPermissions.ipalLogsView,
       ])) {
     return null;
   }
 
-  final today = DateTime.now();
-  final todayText = _dateText(today);
+  final selectedDate = ref.watch(ipalSelectedDateProvider);
+  final selectedDateText = _dateText(selectedDate);
   final response = await ref
       .watch(ipalLogRepositoryProvider)
-      .listLogs(month: today.month, year: today.year, perPage: 100);
+      .listLogs(
+        dateFrom: selectedDateText,
+        dateTo: selectedDateText,
+        perPage: 1,
+      );
 
   for (final row in apiRows(response)) {
-    if (textValue(row['tanggal'], fallback: '') != todayText) continue;
-    final operatorId = pathValue(row, ['operator', 'id']);
-    final operatorExternalId = textValue(
-      pathValue(row, ['operator', 'external_id']),
-      fallback: '',
-    );
-
-    if (operatorId?.toString() == user.id.toString() ||
-        operatorExternalId == user.userId) {
+    if (textValue(row['tanggal'], fallback: '') == selectedDateText) {
       return row;
     }
   }
@@ -69,10 +78,10 @@ Future<Map<String, IpalProcessReference>> ipalProcessReferences(Ref ref) async {
     return const <String, IpalProcessReference>{};
   }
 
-  final today = DateTime.now();
+  final selectedDate = ref.watch(ipalSelectedDateProvider);
   final response = await ref
       .watch(ipalLogRepositoryProvider)
-      .processReferences(date: _dateText(today));
+      .processReferences(date: _dateText(selectedDate));
   final rows = apiRows(response);
   if (rows.isEmpty) return const <String, IpalProcessReference>{};
 

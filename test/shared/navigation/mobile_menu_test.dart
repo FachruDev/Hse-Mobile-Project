@@ -47,4 +47,33 @@ void main() {
     expect(items, contains('/form/ipal/checklist'));
     expect(items, contains('/riwayat/ipal'));
   });
+
+  test('IPAL history menu requires global view permission', () {
+    const createOnlyUser = AppUser(
+      id: 3,
+      userId: 'create.only',
+      email: 'create.only@example.test',
+      name: 'Create Only',
+      permissions: [AppPermissions.ipalLogsCreate],
+    );
+    const viewer = AppUser(
+      id: 4,
+      userId: 'viewer.ipal',
+      email: 'viewer.ipal@example.test',
+      name: 'Viewer IPAL',
+      permissions: [AppPermissions.ipalLogsViewAll],
+    );
+
+    final createOnlyItems = visibleMobileMenuSections(createOnlyUser)
+        .expand((section) => section.items)
+        .map((item) => item.path)
+        .toList(growable: false);
+    final viewerItems = visibleMobileMenuSections(viewer)
+        .expand((section) => section.items)
+        .map((item) => item.path)
+        .toList(growable: false);
+
+    expect(createOnlyItems, isNot(contains('/riwayat/ipal')));
+    expect(viewerItems, contains('/riwayat/ipal'));
+  });
 }

@@ -90,6 +90,19 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  @override
+  Future<void> updatePassword({
+    required String currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) {
+    return _remoteDataSource.updatePassword(
+      currentPassword: currentPassword,
+      password: password,
+      passwordConfirmation: passwordConfirmation,
+    );
+  }
+
   AppUser? _readCachedUser() {
     final cached = _sessionCache.readJsonMap(_userCacheKey);
     if (cached == null) return null;

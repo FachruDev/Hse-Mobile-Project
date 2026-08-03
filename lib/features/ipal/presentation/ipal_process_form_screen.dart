@@ -48,6 +48,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
   int? _selectedTemplateId;
   bool _draftLoaded = false;
+  String? _loadedDateLabel;
   bool _saving = false;
   bool _submitting = false;
   int _fieldRevision = 0;
@@ -61,6 +62,13 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   @override
   Widget build(BuildContext context) {
     final masterState = ref.watch(ipalProcessMasterProvider);
+    final selectedDate = ref.watch(ipalSelectedDateProvider);
+    final selectedDateLabel = _dateFormat.format(selectedDate);
+    final existingLog = ref.watch(ipalTodayLogProvider).value;
+    final existingLogId = _intValue(existingLog?['id']);
+    final existingDetailState = existingLogId == null
+        ? null
+        : ref.watch(ipalLogDetailProvider(existingLogId));
     final processReferences = ref
         .watch(ipalProcessReferencesProvider)
         .maybeWhen(
@@ -72,6 +80,12 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
       title: 'Form IPAL',
       selectedPath: '/form/ipal/proses',
       showBackButton: true,
+      actions: [
+        _SelectedDateButton(
+          label: selectedDateLabel,
+          onPressed: _pickOperationalDate,
+        ),
+      ],
       body: IpalTodayLogGuard(
         child: masterState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -80,7 +94,23 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
             onRetry: () => ref.invalidate(ipalProcessMasterProvider),
           ),
           data: (master) {
-            _loadDraftOnce(master);
+            if (existingLogId != null &&
+                existingDetailState?.isLoading == true) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (existingLogId != null &&
+                existingDetailState?.hasError == true) {
+              return _ErrorState(
+                message: 'Draft IPAL existing belum bisa dimuat.',
+                onRetry: () =>
+                    ref.invalidate(ipalLogDetailProvider(existingLogId)),
+              );
+            }
+
+            _loadDraftOnce(
+              master,
+              existingLog: _detailData(existingDetailState?.value),
+            );
 
             final template = _selectedTemplate(master);
             if (template == null) return const _EmptyMasterState();
@@ -92,6 +122,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                 template: template,
                 batchSections: batchSections,
                 processReferences: processReferences,
+                selectedDateLabel: selectedDateLabel,
               ),
             );
           },
@@ -104,6 +135,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     required IpalProcessTemplate template,
     required List<IpalProcessSection> batchSections,
     required Map<String, IpalProcessReference> processReferences,
+    required String selectedDateLabel,
   }) {
     final summary = _ProcessCompletionSummary(
       template: template,
@@ -150,9 +182,10 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                   children: [
                     const IpalFormTabs(selected: IpalFormTab.process),
                     const SizedBox(height: 16),
-                    const _FormTitleCard(
+                    _FormTitleCard(
                       title: 'Catatan Proses IPAL',
                       icon: Icons.fact_check_outlined,
+                      subtitle: selectedDateLabel,
                     ),
                     const SizedBox(height: 12),
                     const SubmitQueueStatusBanner(
@@ -192,9 +225,10 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
                     children: [
                       const IpalFormTabs(selected: IpalFormTab.process),
                       const SizedBox(height: 16),
-                      const _FormTitleCard(
+                      _FormTitleCard(
                         title: 'Catatan Proses IPAL',
                         icon: Icons.fact_check_outlined,
+                        subtitle: selectedDateLabel,
                       ),
                       const SizedBox(height: 12),
                       const SubmitQueueStatusBanner(
@@ -280,13 +314,25 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     ];
   }
 
-  void _loadDraftOnce(IpalProcessMaster master) {
-    if (_draftLoaded) return;
+  void _loadDraftOnce(
+    IpalProcessMaster master, {
+    Map<String, dynamic>? existingLog,
+  }) {
+    final dateLabel = _selectedDateLabel;
+    if (_draftLoaded && _loadedDateLabel == dateLabel) return;
     _draftLoaded = true;
+    _loadedDateLabel = dateLabel;
+    _processValues.clear();
+    _processNotes.clear();
+    _processAttachmentPaths.clear();
+    _batches.clear();
+
+    _applyExistingLog(existingLog);
 
     final draft = ref.read(ipalProcessRepositoryProvider).readDraft();
-    if (draft == null) {
-      _selectedTemplateId = master.templates.firstOrNull?.id;
+    if (draft == null || draft.tanggal != dateLabel) {
+      _selectedTemplateId ??= master.templates.firstOrNull?.id;
+      _fieldRevision++;
       return;
     }
 
@@ -628,7 +674,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 
   IpalProcessDraft _draftFor(IpalProcessTemplate template) {
     return IpalProcessDraft(
-      tanggal: _todayLabel,
+      tanggal: _selectedDateLabel,
       templateId: template.id,
       processValues: Map<String, String>.from(_processValues),
       processNotes: Map<String, String>.from(_processNotes),
@@ -637,7 +683,83 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
     );
   }
 
-  String get _todayLabel => _dateFormat.format(DateTime.now());
+  String get _selectedDateLabel =>
+      _dateFormat.format(ref.read(ipalSelectedDateProvider));
+
+  Future<void> _pickOperationalDate() async {
+    final current = ref.read(ipalSelectedDateProvider);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked == null) return;
+
+    ref.read(ipalSelectedDateProvider.notifier).set(picked);
+    ref.invalidate(ipalTodayLogProvider);
+    ref.invalidate(ipalProcessReferencesProvider);
+  }
+
+  void _applyExistingLog(Map<String, dynamic>? existingLog) {
+    final processLog = _mapValue(existingLog?['process_log']);
+    if (processLog == null) return;
+
+    _selectedTemplateId = _intValue(processLog['template_id']);
+    final values = processLog['values'];
+    if (values is Iterable) {
+      for (final value in values) {
+        final valueMap = _mapValue(value);
+        if (valueMap == null) continue;
+        final key = valueMap['item_id']?.toString();
+        if (key == null || key.isEmpty) continue;
+
+        final text = valueMap['value_text']?.toString();
+        final number = valueMap['value_number']?.toString();
+        final resolvedValue = (text != null && text.isNotEmpty) ? text : number;
+        if (resolvedValue != null && resolvedValue.isNotEmpty) {
+          _processValues[key] = resolvedValue;
+        }
+
+        final note = valueMap['note']?.toString();
+        if (note != null && note.isNotEmpty) {
+          _processNotes[key] = note;
+        }
+      }
+    }
+
+    final batches = processLog['batches'];
+    if (batches is! Iterable) return;
+
+    for (final batch in batches) {
+      final batchMap = _mapValue(batch);
+      if (batchMap == null) continue;
+      final batchNo = _intValue(batchMap['batch_no']);
+      if (batchNo == null) continue;
+
+      final batchValues = <String, String>{};
+      final values = batchMap['values'];
+      if (values is Iterable) {
+        for (final value in values) {
+          final valueMap = _mapValue(value);
+          if (valueMap == null) continue;
+          final key = valueMap['item_id']?.toString();
+          if (key == null || key.isEmpty) continue;
+
+          final text = valueMap['value_text']?.toString();
+          final number = valueMap['value_number']?.toString();
+          final resolvedValue = (text != null && text.isNotEmpty)
+              ? text
+              : number;
+          if (resolvedValue != null && resolvedValue.isNotEmpty) {
+            batchValues[key] = resolvedValue;
+          }
+        }
+      }
+
+      _batches.add(IpalBatchDraft(batchNo: batchNo, values: batchValues));
+    }
+  }
 
   Future<void> _saveCurrentDraftSilently() async {
     final master = ref.read(ipalProcessMasterProvider).value;
@@ -651,10 +773,15 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
 }
 
 class _FormTitleCard extends StatelessWidget {
-  const _FormTitleCard({required this.title, required this.icon});
+  const _FormTitleCard({
+    required this.title,
+    required this.icon,
+    required this.subtitle,
+  });
 
   final String title;
   final IconData icon;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -666,9 +793,16 @@ class _FormTitleCard extends StatelessWidget {
             Icon(icon, color: AppColors.primary),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Tanggal IPAL $subtitle',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ),
             ),
           ],
@@ -676,6 +810,40 @@ class _FormTitleCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SelectedDateButton extends StatelessWidget {
+  const _SelectedDateButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.calendar_today_outlined),
+      label: Text(label),
+    );
+  }
+}
+
+Map<String, dynamic>? _detailData(Map<String, dynamic>? response) {
+  final data = response?['data'];
+  return _mapValue(data);
+}
+
+Map<String, dynamic>? _mapValue(Object? value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return null;
+}
+
+int? _intValue(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
 }
 
 class _ProcessCompletionSummary extends StatelessWidget {

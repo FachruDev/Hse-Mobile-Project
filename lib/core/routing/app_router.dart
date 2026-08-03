@@ -4,6 +4,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../features/auth/application/auth_session_controller.dart';
 import '../../features/auth/domain/entities/app_user.dart';
+import '../../features/auth/presentation/change_password_screen.dart';
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/b3/presentation/b3_log_detail_screen.dart';
 import '../../features/b3/presentation/b3_log_list_screen.dart';
@@ -35,11 +36,7 @@ const _routePermissions = <String, _RoutePermissionRequirement>{
     ],
   ),
   '/riwayat/ipal': _RoutePermissionRequirement(
-    any: [
-      AppPermissions.ipalLogsViewOwn,
-      AppPermissions.ipalLogsViewAll,
-      AppPermissions.ipalLogsView,
-    ],
+    any: [AppPermissions.ipalLogsViewAll, AppPermissions.ipalLogsView],
   ),
   '/riwayat/b3': _RoutePermissionRequirement(
     any: [
@@ -119,6 +116,10 @@ GoRouter appRouter(Ref ref) {
       GoRoute(
         path: '/beranda',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/akun/password',
+        builder: (context, state) => const ChangePasswordScreen(),
       ),
       GoRoute(
         path: '/form/ipal/proses',

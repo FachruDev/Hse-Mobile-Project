@@ -155,6 +155,11 @@ class _HseAppDrawerState extends ConsumerState<HseAppDrawer> {
             ),
             const Divider(height: 1),
             ListTile(
+              leading: const Icon(Icons.key_outlined),
+              title: const Text('Ubah Password'),
+              onTap: () => _go(context, '/akun/password'),
+            ),
+            ListTile(
               leading: const Icon(Icons.logout),
               title: const Text('Keluar'),
               onTap: _confirmLogout,

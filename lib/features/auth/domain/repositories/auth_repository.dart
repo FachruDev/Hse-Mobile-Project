@@ -12,4 +12,10 @@ abstract interface class AuthRepository {
   });
 
   Future<void> logout();
+
+  Future<void> updatePassword({
+    required String currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  });
 }

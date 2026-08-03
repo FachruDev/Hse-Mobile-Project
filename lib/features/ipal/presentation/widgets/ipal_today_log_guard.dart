@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../color_config.dart';
+import '../../../../core/permissions/app_permissions.dart';
 import '../../../../shared/utils/api_response_parser.dart';
 import '../../../../shared/utils/hse_datetime_formatter.dart';
+import '../../../auth/application/auth_session_controller.dart';
 import '../../application/ipal_log_controller.dart';
 
 class IpalTodayLogGuard extends ConsumerWidget {
@@ -15,10 +17,21 @@ class IpalTodayLogGuard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final todayLogState = ref.watch(ipalTodayLogProvider);
+    final canEditDraft =
+        ref
+            .watch(authSessionControllerProvider)
+            .value
+            ?.user
+            ?.hasPermission(AppPermissions.ipalLogsCreate) ??
+        false;
 
     return todayLogState.when(
       data: (log) {
         if (log == null) return child;
+        final status = textValue(pathValue(log, ['process_log', 'status']));
+        if (canEditDraft && (status.isEmpty || status == 'DRAFT')) {
+          return child;
+        }
         return _ExistingLogView(log: log);
       },
       error: (_, _) => child,

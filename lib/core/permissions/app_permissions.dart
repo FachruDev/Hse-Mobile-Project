@@ -8,7 +8,6 @@ class AppPermissions {
   static const masterBatchView = 'master.batch.view';
 
   static const ipalLogsCreate = 'ipal.logs.create';
-  static const ipalLogsViewOwn = 'ipal.logs.view-own';
   static const ipalLogsViewAll = 'ipal.logs.view-all';
   static const ipalLogsView = 'ipal.logs.view';
   static const ipalLogsSubmit = 'ipal.logs.submit';

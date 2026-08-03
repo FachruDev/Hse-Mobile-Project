@@ -32,6 +32,21 @@ class AuthRemoteDataSource {
   Future<void> logout() async {
     await _apiClient.post<Map<String, dynamic>>('/auth/logout');
   }
+
+  Future<void> updatePassword({
+    required String currentPassword,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    await _apiClient.patch<Map<String, dynamic>>(
+      '/auth/password',
+      data: {
+        'current_password': currentPassword,
+        'password': password,
+        'password_confirmation': passwordConfirmation,
+      },
+    );
+  }
 }
 
 class LoginResult {

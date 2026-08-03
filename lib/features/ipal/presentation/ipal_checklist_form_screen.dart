@@ -7,6 +7,7 @@ import '../../../color_config.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
 import '../../../shared/widgets/hse_confirm_dialog.dart';
 import '../application/ipal_checklist_master_controller.dart';
+import '../application/ipal_log_controller.dart';
 import '../data/ipal_checklist_repository_impl.dart';
 import '../domain/entities/ipal_checklist_draft.dart';
 import '../domain/entities/ipal_checklist_master.dart';
@@ -35,6 +36,7 @@ class _IpalChecklistFormScreenState
 
   int? _selectedTemplateId;
   bool _draftLoaded = false;
+  String? _loadedDateLabel;
   bool _saving = false;
   int _fieldRevision = 0;
 
@@ -47,11 +49,24 @@ class _IpalChecklistFormScreenState
   @override
   Widget build(BuildContext context) {
     final templatesState = ref.watch(ipalChecklistTemplatesProvider);
+    final selectedDate = ref.watch(ipalSelectedDateProvider);
+    final selectedDateLabel = _dateFormat.format(selectedDate);
+    final existingLog = ref.watch(ipalTodayLogProvider).value;
+    final existingLogId = _intValue(existingLog?['id']);
+    final existingDetailState = existingLogId == null
+        ? null
+        : ref.watch(ipalLogDetailProvider(existingLogId));
 
     return HseAppScaffold(
       title: 'Form IPAL',
       selectedPath: '/form/ipal/checklist',
       showBackButton: true,
+      actions: [
+        _SelectedDateButton(
+          label: selectedDateLabel,
+          onPressed: _pickOperationalDate,
+        ),
+      ],
       body: IpalTodayLogGuard(
         child: templatesState.when(
           loading: () => const Center(child: CircularProgressIndicator()),
@@ -60,7 +75,23 @@ class _IpalChecklistFormScreenState
             onRetry: () => ref.invalidate(ipalChecklistTemplatesProvider),
           ),
           data: (templates) {
-            _loadDraftOnce(templates);
+            if (existingLogId != null &&
+                existingDetailState?.isLoading == true) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            if (existingLogId != null &&
+                existingDetailState?.hasError == true) {
+              return _ErrorState(
+                message: 'Draft IPAL existing belum bisa dimuat.',
+                onRetry: () =>
+                    ref.invalidate(ipalLogDetailProvider(existingLogId)),
+              );
+            }
+
+            _loadDraftOnce(
+              templates,
+              existingLog: _detailData(existingDetailState?.value),
+            );
             final template = _selectedTemplate(templates);
             if (template == null) return const _EmptyChecklistState();
 
@@ -73,6 +104,7 @@ class _IpalChecklistFormScreenState
               template: template,
               activeItems: activeItems,
               groupedItems: groupedItems,
+              selectedDateLabel: selectedDateLabel,
             );
           },
         ),
@@ -84,6 +116,7 @@ class _IpalChecklistFormScreenState
     required IpalChecklistTemplate template,
     required List<IpalChecklistItem> activeItems,
     required Map<String, List<IpalChecklistItem>> groupedItems,
+    required String selectedDateLabel,
   }) {
     final summary = _ChecklistCompletionSummary(
       items: activeItems,
@@ -116,9 +149,10 @@ class _IpalChecklistFormScreenState
                   children: [
                     const IpalFormTabs(selected: IpalFormTab.checklist),
                     const SizedBox(height: 16),
-                    const _FormTitleCard(
+                    _FormTitleCard(
                       title: 'Checklist Harian',
                       icon: Icons.checklist_outlined,
+                      subtitle: selectedDateLabel,
                     ),
                     const SizedBox(height: 12),
                     summary,
@@ -147,9 +181,10 @@ class _IpalChecklistFormScreenState
                     children: [
                       const IpalFormTabs(selected: IpalFormTab.checklist),
                       const SizedBox(height: 16),
-                      const _FormTitleCard(
+                      _FormTitleCard(
                         title: 'Checklist Harian',
                         icon: Icons.checklist_outlined,
+                        subtitle: selectedDateLabel,
                       ),
                       const SizedBox(height: 12),
                       summary,
@@ -223,13 +258,24 @@ class _IpalChecklistFormScreenState
     ];
   }
 
-  void _loadDraftOnce(List<IpalChecklistTemplate> templates) {
-    if (_draftLoaded) return;
+  void _loadDraftOnce(
+    List<IpalChecklistTemplate> templates, {
+    Map<String, dynamic>? existingLog,
+  }) {
+    final dateLabel = _selectedDateLabel;
+    if (_draftLoaded && _loadedDateLabel == dateLabel) return;
     _draftLoaded = true;
+    _loadedDateLabel = dateLabel;
+    _statuses.clear();
+    _notes.clear();
+    _attachmentPaths.clear();
+
+    _applyExistingLog(existingLog);
 
     final draft = ref.read(ipalChecklistRepositoryProvider).readDraft();
-    if (draft == null) {
-      _selectedTemplateId = templates.firstOrNull?.id;
+    if (draft == null || draft.tanggal != dateLabel) {
+      _selectedTemplateId ??= templates.firstOrNull?.id;
+      _fieldRevision++;
       return;
     }
 
@@ -344,7 +390,7 @@ class _IpalChecklistFormScreenState
 
   IpalChecklistDraft _draftFor(IpalChecklistTemplate template) {
     return IpalChecklistDraft(
-      tanggal: _todayLabel,
+      tanggal: _selectedDateLabel,
       templateId: template.id,
       statuses: Map<String, String>.from(_statuses),
       notes: Map<String, String>.from(_notes),
@@ -358,14 +404,61 @@ class _IpalChecklistFormScreenState
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String get _todayLabel => _dateFormat.format(DateTime.now());
+  String get _selectedDateLabel =>
+      _dateFormat.format(ref.read(ipalSelectedDateProvider));
+
+  Future<void> _pickOperationalDate() async {
+    final current = ref.read(ipalSelectedDateProvider);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+    );
+    if (picked == null) return;
+
+    ref.read(ipalSelectedDateProvider.notifier).set(picked);
+    ref.invalidate(ipalTodayLogProvider);
+    ref.invalidate(ipalProcessReferencesProvider);
+  }
+
+  void _applyExistingLog(Map<String, dynamic>? existingLog) {
+    final checklist = _mapValue(existingLog?['checklist']);
+    if (checklist == null) return;
+
+    _selectedTemplateId = _intValue(checklist['template_id']);
+    final values = checklist['values'];
+    if (values is! Iterable) return;
+
+    for (final value in values) {
+      final valueMap = _mapValue(value);
+      if (valueMap == null) continue;
+      final key = valueMap['item_id']?.toString();
+      if (key == null || key.isEmpty) continue;
+
+      final status = valueMap['status']?.toString() ?? '';
+      if (status.isNotEmpty) {
+        _statuses[key] = status;
+      }
+
+      final note = valueMap['note']?.toString();
+      if (note != null && note.isNotEmpty) {
+        _notes[key] = note;
+      }
+    }
+  }
 }
 
 class _FormTitleCard extends StatelessWidget {
-  const _FormTitleCard({required this.title, required this.icon});
+  const _FormTitleCard({
+    required this.title,
+    required this.icon,
+    required this.subtitle,
+  });
 
   final String title;
   final IconData icon;
+  final String subtitle;
 
   @override
   Widget build(BuildContext context) {
@@ -377,9 +470,16 @@ class _FormTitleCard extends StatelessWidget {
             Icon(icon, color: AppColors.primary),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(
-                title,
-                style: Theme.of(context).textTheme.titleMedium,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Tanggal IPAL $subtitle',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
               ),
             ),
           ],
@@ -387,6 +487,40 @@ class _FormTitleCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SelectedDateButton extends StatelessWidget {
+  const _SelectedDateButton({required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.calendar_today_outlined),
+      label: Text(label),
+    );
+  }
+}
+
+Map<String, dynamic>? _detailData(Map<String, dynamic>? response) {
+  final data = response?['data'];
+  return _mapValue(data);
+}
+
+Map<String, dynamic>? _mapValue(Object? value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return Map<String, dynamic>.from(value);
+  return null;
+}
+
+int? _intValue(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
 }
 
 class _ChecklistCompletionSummary extends StatelessWidget {

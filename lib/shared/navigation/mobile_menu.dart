@@ -77,7 +77,6 @@ const mobileMenuSections = <MobileMenuSection>[
         icon: Icons.history_outlined,
         requiredAll: [],
         requiredAny: [
-          AppPermissions.ipalLogsViewOwn,
           AppPermissions.ipalLogsViewAll,
           AppPermissions.ipalLogsView,
         ],

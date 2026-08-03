@@ -9,6 +9,58 @@ part of 'ipal_log_controller.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
+@ProviderFor(IpalSelectedDate)
+final ipalSelectedDateProvider = IpalSelectedDateProvider._();
+
+final class IpalSelectedDateProvider
+    extends $NotifierProvider<IpalSelectedDate, DateTime> {
+  IpalSelectedDateProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'ipalSelectedDateProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$ipalSelectedDateHash();
+
+  @$internal
+  @override
+  IpalSelectedDate create() => IpalSelectedDate();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DateTime value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DateTime>(value),
+    );
+  }
+}
+
+String _$ipalSelectedDateHash() => r'412dfb8b7f7a7b7ff1b4b1521c9d848a11474ad3';
+
+abstract class _$IpalSelectedDate extends $Notifier<DateTime> {
+  DateTime build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final ref = this.ref as $Ref<DateTime, DateTime>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<DateTime, DateTime>,
+              DateTime,
+              Object?,
+              Object?
+            >;
+    element.handleCreate(ref, build);
+  }
+}
+
 @ProviderFor(ipalLogList)
 final ipalLogListProvider = IpalLogListFamily._();
 
@@ -222,7 +274,7 @@ final class IpalTodayLogProvider
   }
 }
 
-String _$ipalTodayLogHash() => r'd0cdccda4ac11ad58922000e3d87ed6f08563a97';
+String _$ipalTodayLogHash() => r'60fa909377d2afe47ea0e1a1dbe9e9f427577081';
 
 @ProviderFor(ipalProcessReferences)
 final ipalProcessReferencesProvider = IpalProcessReferencesProvider._();
@@ -264,4 +316,4 @@ final class IpalProcessReferencesProvider
 }
 
 String _$ipalProcessReferencesHash() =>
-    r'4b68cdb48be86f927d49e64099fc4bf27f689dac';
+    r'ebfcad1266e233b42a68334f547236ec840cfdc5';

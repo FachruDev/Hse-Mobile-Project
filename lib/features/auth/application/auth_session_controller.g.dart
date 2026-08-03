@@ -34,7 +34,7 @@ final class AuthSessionControllerProvider
 }
 
 String _$authSessionControllerHash() =>
-    r'95bf8517f1cea36099885943a2907b6a2a668cdb';
+    r'ca60a706ef4973dfef4bf3daf519c693b387ca18';
 
 abstract class _$AuthSessionController extends $AsyncNotifier<AuthSession> {
   FutureOr<AuthSession> build();
@@ -93,4 +93,4 @@ final class AuthRepositoryProvider
   }
 }
 
-String _$authRepositoryHash() => r'65513cb9f65f649fd461f9a7f6258391422587b3';
+String _$authRepositoryHash() => r'a6234cd57716bfa85e03cc50981d799d7c42d320';
