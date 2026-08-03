@@ -23,7 +23,8 @@ void main() {
     await initializeDateFormatting('id_ID');
   });
 
-  testWidgets('checklist IPAL renders without white screen', (tester) async {
+  testWidgets('checklist IPAL renders on phone and tablet', (tester) async {
+    await _setSurfaceSize(tester, const Size(390, 844));
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -35,7 +36,7 @@ void main() {
             _FakeChecklistRepository(_checklistTemplates),
           ),
         ],
-        child: const MaterialApp(home: IpalChecklistFormScreen()),
+        child: _materialApp(const IpalChecklistFormScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -43,9 +44,16 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Tanggal Operasional'), findsOneWidget);
     expect(find.text('Checklist Harian'), findsWidgets);
+
+    await _setSurfaceSize(tester, const Size(1024, 768));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Tanggal Operasional'), findsOneWidget);
   });
 
-  testWidgets('proses IPAL renders without white screen', (tester) async {
+  testWidgets('proses IPAL renders on phone and tablet', (tester) async {
+    await _setSurfaceSize(tester, const Size(390, 844));
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -58,7 +66,7 @@ void main() {
             _FakeChecklistRepository(_checklistTemplates),
           ),
         ],
-        child: const MaterialApp(home: IpalProcessFormScreen()),
+        child: _materialApp(const IpalProcessFormScreen()),
       ),
     );
     await tester.pumpAndSettle();
@@ -66,7 +74,37 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.text('Tanggal Operasional'), findsOneWidget);
     expect(find.text('Catatan Proses IPAL'), findsWidgets);
+
+    await _setSurfaceSize(tester, const Size(1024, 768));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Tanggal Operasional'), findsOneWidget);
   });
+}
+
+Future<void> _setSurfaceSize(WidgetTester tester, Size size) async {
+  await tester.binding.setSurfaceSize(size);
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    tester.binding.setSurfaceSize(null);
+  });
+}
+
+Widget _materialApp(Widget child) {
+  return MaterialApp(
+    builder: (context, child) {
+      final mediaQuery = MediaQuery.of(context);
+      return MediaQuery(
+        data: mediaQuery.copyWith(textScaler: const TextScaler.linear(1.4)),
+        child: child ?? const SizedBox.shrink(),
+      );
+    },
+    home: child,
+  );
 }
 
 final _baseOverrides = [

@@ -16,21 +16,26 @@ class IpalAndroidScrollbar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!alwaysVisible) {
+      return ScrollConfiguration(
+        behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
+        child: child,
+      );
+    }
+
     return ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(scrollbars: false),
       child: Scrollbar(
         controller: controller,
-        thumbVisibility: alwaysVisible,
-        trackVisibility: alwaysVisible,
-        interactive: true,
+        thumbVisibility: true,
+        trackVisibility: true,
+        interactive: false,
         radius: const Radius.circular(999),
-        thickness: alwaysVisible ? 6 : 4,
+        thickness: 6,
         child: DecoratedBox(
-          decoration: alwaysVisible
-              ? const BoxDecoration(
-                  border: Border(right: BorderSide(color: AppColors.border)),
-                )
-              : const BoxDecoration(),
+          decoration: const BoxDecoration(
+            border: Border(right: BorderSide(color: AppColors.border)),
+          ),
           child: child,
         ),
       ),

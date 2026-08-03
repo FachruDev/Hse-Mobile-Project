@@ -211,7 +211,8 @@ class _IpalChecklistFormScreenState
                   ],
                 ),
               ),
-              IpalFloatingScrollControls(controller: _scrollController),
+              if (constraints.maxWidth >= 600)
+                IpalFloatingScrollControls(controller: _scrollController),
             ],
           );
         }
@@ -632,38 +633,72 @@ class _OperationalDateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              backgroundColor: AppColors.primaryPastel,
-              child: Icon(
-                Icons.calendar_today_outlined,
-                color: AppColors.primary,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compact = constraints.maxWidth < 360;
+
+          final content = Row(
+            children: [
+              const CircleAvatar(
+                backgroundColor: AppColors.primaryPastel,
+                child: Icon(
+                  Icons.calendar_today_outlined,
+                  color: AppColors.primary,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Tanggal Operasional',
-                    style: Theme.of(context).textTheme.labelLarge,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Tanggal Operasional',
+                      style: Theme.of(context).textTheme.labelLarge,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+
+          return Padding(
+            padding: const EdgeInsets.all(14),
+            child: compact
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      content,
+                      const SizedBox(height: 12),
+                      OutlinedButton.icon(
+                        onPressed: onPressed,
+                        icon: const Icon(Icons.edit_calendar_outlined),
+                        label: const Text('Ubah Tanggal'),
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      Expanded(child: content),
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        width: 112,
+                        child: OutlinedButton.icon(
+                          onPressed: onPressed,
+                          icon: const Icon(Icons.edit_calendar_outlined),
+                          label: const Text('Ubah'),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 3),
-                  Text(label, style: Theme.of(context).textTheme.titleMedium),
-                ],
-              ),
-            ),
-            OutlinedButton.icon(
-              onPressed: onPressed,
-              icon: const Icon(Icons.edit_calendar_outlined),
-              label: const Text('Ubah'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }

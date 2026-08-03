@@ -10,31 +10,84 @@ class IpalFormTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<IpalFormTab>(
-      segments: const [
-        ButtonSegment(
-          value: IpalFormTab.checklist,
-          icon: Icon(Icons.checklist_outlined),
-          label: Text('Checklist Harian'),
-        ),
-        ButtonSegment(
-          value: IpalFormTab.process,
-          icon: Icon(Icons.fact_check_outlined),
-          label: Text('Catatan Proses'),
-        ),
-      ],
-      selected: {selected},
-      showSelectedIcon: false,
-      onSelectionChanged: (values) {
-        final target = values.first;
-        if (target == selected) return;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 420;
+        final tabs = [
+          _TabButton(
+            selected: selected == IpalFormTab.checklist,
+            icon: Icons.checklist_outlined,
+            label: 'Checklist',
+            onPressed: () => _go(context, IpalFormTab.checklist),
+          ),
+          _TabButton(
+            selected: selected == IpalFormTab.process,
+            icon: Icons.fact_check_outlined,
+            label: 'Proses',
+            onPressed: () => _go(context, IpalFormTab.process),
+          ),
+        ];
 
-        context.go(
-          target == IpalFormTab.checklist
-              ? '/form/ipal/checklist'
-              : '/form/ipal/proses',
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [tabs.first, const SizedBox(height: 8), tabs.last],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: tabs.first),
+            const SizedBox(width: 8),
+            Expanded(child: tabs.last),
+          ],
         );
       },
     );
+  }
+
+  void _go(BuildContext context, IpalFormTab target) {
+    if (target == selected) return;
+
+    context.go(
+      target == IpalFormTab.checklist
+          ? '/form/ipal/checklist'
+          : '/form/ipal/proses',
+    );
+  }
+}
+
+class _TabButton extends StatelessWidget {
+  const _TabButton({
+    required this.selected,
+    required this.icon,
+    required this.label,
+    required this.onPressed,
+  });
+
+  final bool selected;
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
+        ),
+      ],
+    );
+
+    if (selected) {
+      return FilledButton(onPressed: onPressed, child: child);
+    }
+
+    return OutlinedButton(onPressed: onPressed, child: child);
   }
 }
