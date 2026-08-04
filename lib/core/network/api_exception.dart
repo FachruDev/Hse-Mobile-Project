@@ -20,10 +20,15 @@ class ApiException implements Exception {
     final data = error.response?.data;
 
     if (data is Map<String, dynamic>) {
+      final fieldErrors = _parseFieldErrors(data['errors']);
       return ApiException(
-        message: data['message']?.toString() ?? _fallbackMessage(statusCode),
+        message: _normalizeMessage(
+          data['message']?.toString(),
+          statusCode,
+          fieldErrors,
+        ),
         statusCode: statusCode,
-        fieldErrors: _parseFieldErrors(data['errors']),
+        fieldErrors: fieldErrors,
       );
     }
 
@@ -42,6 +47,26 @@ class ApiException implements Exception {
           : <String>[value.toString()];
       return MapEntry(key.toString(), messages);
     });
+  }
+
+  static String _normalizeMessage(
+    String? message,
+    int? statusCode,
+    Map<String, List<String>> fieldErrors,
+  ) {
+    final rawMessage = message?.trim();
+    final flattenedErrors = fieldErrors.values.expand((value) => value);
+    final uploadFailed =
+        rawMessage == 'validation.uploaded' ||
+        flattenedErrors.any((value) => value.trim() == 'validation.uploaded');
+
+    if (uploadFailed) {
+      return 'Upload foto gagal. Kemungkinan ukuran file atau total lampiran terlalu besar. Gunakan foto yang lebih kecil lalu kirim ulang.';
+    }
+
+    if (rawMessage != null && rawMessage.isNotEmpty) return rawMessage;
+
+    return _fallbackMessage(statusCode);
   }
 
   static String _fallbackMessage(int? statusCode) {

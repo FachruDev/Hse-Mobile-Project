@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../color_config.dart';
+import '../../../core/files/upload_image_optimizer.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
@@ -50,16 +51,18 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
   bool _draftLoaded = false;
   bool _saving = false;
   bool _submitting = false;
+  late final SubmitQueueService _queueService;
 
   bool get _isQueueEdit => widget.queueItemId?.isNotEmpty == true;
 
   @override
   void initState() {
     super.initState();
+    _queueService = ref.read(submitQueueServiceProvider);
 
     final queueItemId = widget.queueItemId;
     if (queueItemId != null) {
-      unawaited(ref.read(submitQueueServiceProvider).lockItem(queueItemId));
+      unawaited(_queueService.lockItem(queueItemId));
     }
   }
 
@@ -67,7 +70,7 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
   void dispose() {
     final queueItemId = widget.queueItemId;
     if (queueItemId != null) {
-      unawaited(ref.read(submitQueueServiceProvider).unlockItem(queueItemId));
+      unawaited(_queueService.unlockItem(queueItemId));
     }
     _weightController.dispose();
     _documentController.dispose();
@@ -206,8 +209,9 @@ class _B3StorageFormScreenState extends ConsumerState<B3StorageFormScreen> {
   Future<void> _pickPhoto(ImageSource source) async {
     final image = await _imagePicker.pickImage(
       source: source,
-      imageQuality: 82,
-      maxWidth: 1600,
+      imageQuality: UploadImageOptimizer.pickerImageQuality,
+      maxWidth: UploadImageOptimizer.pickerMaxDimension,
+      maxHeight: UploadImageOptimizer.pickerMaxDimension,
     );
     if (image == null) return;
     setState(() => _photoPath = image.path);
@@ -591,15 +595,9 @@ class _WasteCard extends StatelessWidget {
             TextFormField(
               controller: documentController,
               decoration: const InputDecoration(
-                labelText: 'Nomor Dokumen',
+                labelText: 'Nomor Dokumen opsional',
                 prefixIcon: Icon(Icons.description_outlined),
               ),
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Nomor dokumen wajib diisi.';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 12),
             TextFormField(

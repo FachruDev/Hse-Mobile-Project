@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/files/upload_image_optimizer.dart';
 import '../entities/ipal_checklist_draft.dart';
 import '../entities/ipal_checklist_master.dart';
 import '../entities/ipal_process_draft.dart';
@@ -59,12 +60,14 @@ class IpalLogPayloadBuilder {
         ..add(MapEntry('checklist[values][$index][status]', value['status']))
         ..add(MapEntry('checklist[values][$index][note]', value['note'] ?? ''));
 
-      final attachmentPath = value['attachment_path']?.toString();
-      if (attachmentPath != null && attachmentPath.isNotEmpty) {
+      final attachment = await UploadImageOptimizer.optimize(
+        value['attachment_path']?.toString(),
+      );
+      if (attachment != null && await attachment.exists()) {
         files.add(
           MapEntry(
             'checklist[values][$index][attachment]',
-            await MultipartFile.fromFile(attachmentPath),
+            await MultipartFile.fromFile(attachment.path),
           ),
         );
       }
@@ -97,12 +100,14 @@ class IpalLogPayloadBuilder {
         )
         ..add(MapEntry('process[values][$index][note]', value['note'] ?? ''));
 
-      final attachmentPath = value['attachment_path']?.toString();
-      if (attachmentPath != null && attachmentPath.isNotEmpty) {
+      final attachment = await UploadImageOptimizer.optimize(
+        value['attachment_path']?.toString(),
+      );
+      if (attachment != null && await attachment.exists()) {
         files.add(
           MapEntry(
             'process[values][$index][attachment]',
-            await MultipartFile.fromFile(attachmentPath),
+            await MultipartFile.fromFile(attachment.path),
           ),
         );
       }

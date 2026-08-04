@@ -117,6 +117,12 @@ class SubmitQueueService {
 
     await enqueue(item.copyWith(locked: false));
   }
+
+  Future<void> unlockAll() async {
+    for (final item in pendingItems().where((item) => item.locked)) {
+      await enqueue(item.copyWith(locked: false));
+    }
+  }
 }
 
 enum SubmitQueueStatus { pending, failed, done }

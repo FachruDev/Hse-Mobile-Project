@@ -112,6 +112,26 @@ void main() {
     expect(item?.lastError, isNull);
     expect(item?.displayDate, '2026-08-04');
   });
+
+  test('unlockAll membuka semua antrean yang tertinggal locked', () async {
+    final box = _MemoryBox();
+    final service = SubmitQueueService(box);
+
+    await service.enqueue(
+      SubmitQueueItem(
+        id: 'queue-1',
+        endpoint: '/b3-storage/logs',
+        method: 'POST',
+        payload: const {'movement_date': '2026-08-03'},
+        createdAt: DateTime(2026, 8, 3),
+        locked: true,
+      ),
+    );
+
+    await service.unlockAll();
+
+    expect(service.findById('queue-1')?.locked, isFalse);
+  });
 }
 
 class _MemoryBox extends Fake implements Box<dynamic> {

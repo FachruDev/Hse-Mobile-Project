@@ -36,6 +36,7 @@ void main() {
         createdAt: DateTime(2026, 8, 3, 9),
         moduleLabel: 'Log B3',
         displayDate: '2026-08-03',
+        locked: true,
       ),
     );
 
@@ -54,6 +55,7 @@ void main() {
 
     expect(find.text('Log IPAL'), findsOneWidget);
     expect(find.text('Log B3'), findsOneWidget);
+    expect(service.findById('b3-1')?.locked, isFalse);
 
     await tester.tap(find.byTooltip('Hapus').first);
     await tester.pumpAndSettle();

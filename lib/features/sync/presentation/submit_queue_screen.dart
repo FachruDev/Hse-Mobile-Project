@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -19,6 +21,12 @@ class SubmitQueueScreen extends ConsumerStatefulWidget {
 
 class _SubmitQueueScreenState extends ConsumerState<SubmitQueueScreen> {
   final _retryingIds = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(ref.read(submitQueueServiceProvider).unlockAll());
+  }
 
   @override
   Widget build(BuildContext context) {

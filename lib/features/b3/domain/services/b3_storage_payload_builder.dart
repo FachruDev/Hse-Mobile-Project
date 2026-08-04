@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 
+import '../../../../core/files/upload_image_optimizer.dart';
 import '../entities/b3_storage_draft.dart';
 
 class B3StoragePayloadBuilder {
@@ -27,9 +28,9 @@ class B3StoragePayloadBuilder {
     ];
 
     final files = <MapEntry<String, MultipartFile>>[];
-    final photoPath = draft.photoPath;
-    if (photoPath != null && photoPath.isNotEmpty) {
-      files.add(MapEntry('photo', await MultipartFile.fromFile(photoPath)));
+    final photo = await UploadImageOptimizer.optimize(draft.photoPath);
+    if (photo != null && await photo.exists()) {
+      files.add(MapEntry('photo', await MultipartFile.fromFile(photo.path)));
     }
 
     return FormData.fromMap({
@@ -59,9 +60,6 @@ class B3StoragePayloadBuilder {
       errors.add('Berat limbah wajib diisi.');
     } else if (num.tryParse(draft.weightKg!.trim()) == null) {
       errors.add('Berat limbah harus angka.');
-    }
-    if (draft.documentNumber == null || draft.documentNumber!.trim().isEmpty) {
-      errors.add('Nomor dokumen wajib diisi.');
     }
     return errors;
   }

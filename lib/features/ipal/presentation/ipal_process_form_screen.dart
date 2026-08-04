@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 
 import '../../../color_config.dart';
+import '../../../core/files/upload_image_optimizer.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/storage/submit_queue_service.dart';
 import '../../../shared/layout/hse_app_scaffold.dart';
@@ -57,12 +58,14 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   bool _saving = false;
   bool _submitting = false;
   int _fieldRevision = 0;
+  late final SubmitQueueService _queueService;
 
   bool get _isQueueEdit => widget.queueItemId?.isNotEmpty == true;
 
   @override
   void initState() {
     super.initState();
+    _queueService = ref.read(submitQueueServiceProvider);
 
     final queueItemId = widget.queueItemId;
     if (queueItemId != null) {
@@ -74,7 +77,7 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   void dispose() {
     final queueItemId = widget.queueItemId;
     if (queueItemId != null) {
-      unawaited(ref.read(submitQueueServiceProvider).unlockItem(queueItemId));
+      unawaited(_queueService.unlockItem(queueItemId));
     }
     _scrollController.dispose();
     super.dispose();
@@ -149,12 +152,12 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   }
 
   Future<void> _prepareQueueEdit(String queueItemId) async {
-    final item = ref.read(submitQueueServiceProvider).findById(queueItemId);
+    final item = _queueService.findById(queueItemId);
     final date = DateTime.tryParse(item?.payload['tanggal']?.toString() ?? '');
     if (date != null) {
       ref.read(ipalSelectedDateProvider.notifier).set(date);
     }
-    await ref.read(submitQueueServiceProvider).lockItem(queueItemId);
+    await _queueService.lockItem(queueItemId);
   }
 
   Widget _guardedBody(Widget child) {
@@ -447,8 +450,9 @@ class _IpalProcessFormScreenState extends ConsumerState<IpalProcessFormScreen> {
   Future<void> _pickProcessAttachment(int itemId, ImageSource source) async {
     final image = await _imagePicker.pickImage(
       source: source,
-      imageQuality: 80,
-      maxWidth: 1600,
+      imageQuality: UploadImageOptimizer.pickerImageQuality,
+      maxWidth: UploadImageOptimizer.pickerMaxDimension,
+      maxHeight: UploadImageOptimizer.pickerMaxDimension,
     );
     if (image == null) return;
 
