@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -36,5 +38,27 @@ void main() {
     expect(find.textContaining('09 Juli 2026'), findsOneWidget);
     expect(find.text('Lihat Detail'), findsOneWidget);
     expect(find.text('Form'), findsNothing);
+  });
+
+  testWidgets('keeps form visible while existing log check is loading', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          ipalTodayLogProvider.overrideWith(
+            (ref) => Completer<Map<String, dynamic>?>().future,
+          ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: IpalTodayLogGuard(child: Text('Form'))),
+        ),
+      ),
+    );
+
+    await tester.pump();
+
+    expect(find.text('Form'), findsOneWidget);
+    expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
 }

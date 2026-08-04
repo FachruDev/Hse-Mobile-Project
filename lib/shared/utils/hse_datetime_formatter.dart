@@ -12,13 +12,13 @@ class HseDateTimeFormatter {
   );
 
   static String date(Object? value, {String fallback = '-'}) {
-    final parsed = _parseDateTime(value);
+    final parsed = _parseDateOnly(value);
     if (parsed == null) return fallback;
     return _dateFormat.format(parsed);
   }
 
   static String shortDate(Object? value, {String fallback = '-'}) {
-    final parsed = _parseDateTime(value);
+    final parsed = _parseDateOnly(value);
     if (parsed == null) return fallback;
     return _shortDateFormat.format(parsed);
   }
@@ -40,7 +40,7 @@ class HseDateTimeFormatter {
     Object? time, {
     String fallback = '-',
   }) {
-    final parsedDate = _parseDateTime(date);
+    final parsedDate = _parseDateOnly(date);
     final parsedTime = _parseTime(time);
     if (parsedDate == null && parsedTime == null) return fallback;
     if (parsedDate == null) return _timeFormat.format(parsedTime!);
@@ -61,7 +61,34 @@ class HseDateTimeFormatter {
     final text = value?.toString().trim();
     if (text == null || text.isEmpty) return null;
 
-    return DateTime.tryParse(text);
+    final parsed = DateTime.tryParse(text);
+    if (parsed == null) return null;
+
+    return parsed.isUtc ? parsed.toLocal() : parsed;
+  }
+
+  static DateTime? _parseDateOnly(Object? value) {
+    if (value is DateTime) {
+      return DateTime(value.year, value.month, value.day);
+    }
+
+    final text = value?.toString().trim();
+    if (text == null || text.isEmpty) return null;
+
+    final match = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(text);
+    if (match != null) {
+      final year = int.tryParse(match.group(1) ?? '');
+      final month = int.tryParse(match.group(2) ?? '');
+      final day = int.tryParse(match.group(3) ?? '');
+      if (year != null && month != null && day != null) {
+        return DateTime(year, month, day);
+      }
+    }
+
+    final parsed = _parseDateTime(text);
+    if (parsed == null) return null;
+
+    return DateTime(parsed.year, parsed.month, parsed.day);
   }
 
   static DateTime? _parseTime(Object? value) {

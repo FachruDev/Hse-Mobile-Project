@@ -35,7 +35,28 @@ class IpalTodayLogGuard extends ConsumerWidget {
         return _ExistingLogView(log: log);
       },
       error: (_, _) => child,
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => _CheckingLogView(child: child),
+    );
+  }
+}
+
+class _CheckingLogView extends StatelessWidget {
+  const _CheckingLogView({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        child,
+        const Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: LinearProgressIndicator(minHeight: 2),
+        ),
+      ],
     );
   }
 }
