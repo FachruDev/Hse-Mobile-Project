@@ -11,9 +11,12 @@ class AppPermissions {
   static const ipalLogsViewAll = 'ipal.logs.view-all';
   static const ipalLogsView = 'ipal.logs.view';
   static const ipalLogsSubmit = 'ipal.logs.submit';
-  static const ipalLogsApprove = 'ipal.logs.approve';
+  // Approve harian IPAL di API memakai ipal.logs.approve-daily (ipal.logs.approve tidak dimiliki role mana pun).
+  static const ipalLogsApprove = 'ipal.logs.approve-daily';
   static const ipalLogsReopen = 'ipal.logs.reopen';
 
+  // Hanya untuk halaman master data. Form B3 cukup b3storage.logs.create: API mengizinkan daftar jenis limbah &
+  // dept inisiator untuk user yang boleh membuat/mengubah log B3.
   static const b3StorageMasterView = 'b3storage.master.view';
   static const b3StorageLogsCreate = 'b3storage.logs.create';
   static const b3StorageLogsViewOwn = 'b3storage.logs.view-own';

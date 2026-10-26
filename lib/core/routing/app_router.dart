@@ -31,10 +31,7 @@ const _routePermissions = <String, _RoutePermissionRequirement>{
     all: [AppPermissions.ipalLogsCreate],
   ),
   '/form/b3': _RoutePermissionRequirement(
-    all: [
-      AppPermissions.b3StorageMasterView,
-      AppPermissions.b3StorageLogsCreate,
-    ],
+    all: [AppPermissions.b3StorageLogsCreate],
   ),
   '/riwayat/ipal': _RoutePermissionRequirement(
     any: [AppPermissions.ipalLogsViewAll, AppPermissions.ipalLogsView],

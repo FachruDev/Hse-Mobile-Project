@@ -76,4 +76,25 @@ void main() {
     expect(createOnlyItems, isNot(contains('/riwayat/ipal')));
     expect(viewerItems, contains('/riwayat/ipal'));
   });
+
+  test('B3 form only needs create permission, not master view', () {
+    const operator = AppUser(
+      id: 5,
+      userId: 'operator.b3',
+      email: 'operator.b3@example.test',
+      name: 'Operator B3',
+      permissions: [
+        AppPermissions.b3StorageLogsCreate,
+        AppPermissions.b3StorageLogsViewOwn,
+      ],
+    );
+
+    final items = visibleMobileMenuSections(operator)
+        .expand((section) => section.items)
+        .map((item) => item.path)
+        .toList(growable: false);
+
+    expect(items, contains('/form/b3'));
+    expect(items, contains('/riwayat/b3'));
+  });
 }

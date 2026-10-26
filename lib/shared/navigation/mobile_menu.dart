@@ -60,10 +60,7 @@ const mobileMenuSections = <MobileMenuSection>[
         subtitle: 'Input limbah masuk atau keluar TPS LB3',
         path: '/form/b3',
         icon: Icons.inventory_2_outlined,
-        requiredAll: [
-          AppPermissions.b3StorageMasterView,
-          AppPermissions.b3StorageLogsCreate,
-        ],
+        requiredAll: [AppPermissions.b3StorageLogsCreate],
       ),
     ],
   ),
